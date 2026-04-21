@@ -27,7 +27,7 @@ security:
 
     access_control:
     - { path: ^/login, roles: PUBLIC_ACCESS }
-    - { path: ^/commande/interne/new, roles: ROLE_USER, allow_if: "not has_role('ROLE_WAREHOUSE')" }
+    - { path: ^/commande/interne/new, roles: ROLE_USER }
     - { path: ^/commande/externe/new, roles: ROLE_WAREHOUSE }
     - { path: ^/, roles: ROLE_USER }
 

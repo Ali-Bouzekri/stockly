@@ -71,7 +71,7 @@ final class LigneCmdExternController extends AbstractController
     #[Route('/{numL_CE}', name: 'app_ligne_cmd_extern_delete', methods: ['POST'])]
     public function delete(Request $request, LigneCmdExtern $ligneCmdExtern, EntityManagerInterface $entityManager): Response
     {
-        if ($this->isCsrfTokenValid('delete'.$ligneCmdExtern->getNumL_CE(), $request->getPayload()->getString('_token'))) {
+        if ($this->isCsrfTokenValid('delete'.$ligneCmdExtern->getNumLCE(), $request->getPayload()->getString('_token'))) {
             $entityManager->remove($ligneCmdExtern);
             $entityManager->flush();
         }

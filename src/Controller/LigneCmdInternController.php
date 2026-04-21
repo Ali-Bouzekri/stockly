@@ -71,7 +71,7 @@ final class LigneCmdInternController extends AbstractController
     #[Route('/{numL_CI}', name: 'app_ligne_cmd_intern_delete', methods: ['POST'])]
     public function delete(Request $request, LigneCmdIntern $ligneCmdIntern, EntityManagerInterface $entityManager): Response
     {
-        if ($this->isCsrfTokenValid('delete'.$ligneCmdIntern->getNumL_CI(), $request->getPayload()->getString('_token'))) {
+        if ($this->isCsrfTokenValid('delete'.$ligneCmdIntern->getNumLCI(), $request->getPayload()->getString('_token'))) {
             $entityManager->remove($ligneCmdIntern);
             $entityManager->flush();
         }
