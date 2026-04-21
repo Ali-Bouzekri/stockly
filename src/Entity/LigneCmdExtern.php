@@ -16,8 +16,8 @@ class LigneCmdExtern {
     #[ORM\Column]
     private ?int $quantite = null;
 
-    #[ORM\ManyToOne(targetEntity: CmdExtern::class)]
-#[ORM\JoinColumn(name: "id_cmd_extern", referencedColumnName: "id_cmd_extern", nullable: false)]
+    #[ORM\ManyToOne(inversedBy: 'lignesCmdExterns')]
+#[ORM\JoinColumn(name: 'id_cmd_extern', referencedColumnName: 'id_cmd_extern')]
 private ?CmdExtern $cmdExtern = null;
 
     #[ORM\ManyToOne]

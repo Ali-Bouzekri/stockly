@@ -1,30 +1,103 @@
 {% extends 'base.html.twig' %}
 
-{% block title %}CmdExtern{% endblock %}
+{% block title %}External Order #{{ commande.numero }}{% endblock %}
 
 {% block body %}
-    <h1>CmdExtern</h1>
+<div class="max-w-4xl mx-auto px-4 py-8">
 
-    <table class="table">
-        <tbody>
-            <tr>
-                <th>IdCmdExt</th>
-                <td>{{ cmd_extern.idCmdExt }}</td>
-            </tr>
-            <tr>
-                <th>DateCE</th>
-                <td>{{ cmd_extern.dateCE ? cmd_extern.dateCE|date('Y-m-d') : '' }}</td>
-            </tr>
-            <tr>
-                <th>Statut</th>
-                <td>{{ cmd_extern.statut }}</td>
-            </tr>
-        </tbody>
-    </table>
+    <div class="flex justify-between items-center mb-6">
+        <h1 class="text-2xl font-bold">External Order #{{ commande.numero }}</h1>
+        <a href="{{ path('app_cmd_extern_index') }}" class="text-blue-600 hover:underline text-sm">← Back to list</a>
+    </div>
 
-    <a href="{{ path('app_cmd_extern_index') }}">back to list</a>
+    <div class="bg-white rounded-xl shadow p-6 mb-6">
+        <div class="grid grid-cols-4 gap-4">
+            <div>
+                <p class="text-xs text-gray-400">Date</p>
+                <p class="font-semibold">{{ commande.dateCE ? commande.dateCE|date('d/m/Y') : '—' }}</p>
+            </div>
+            <div>
+                <p class="text-xs text-gray-400">Supplier</p>
+                <p class="font-semibold">{{ commande.fournisseur ? commande.fournisseur.denominateur : '—' }}</p>
+            </div>
+            <div>
+                <p class="text-xs text-gray-400">Contact</p>
+                <p class="font-semibold">{{ commande.fournisseur ? commande.fournisseur.adresse : '—' }}</p>
+            </div>
+            <div>
+                <p class="text-xs text-gray-400">Status</p>
+                <span class="px-3 py-1 rounded-full text-xs font-bold uppercase
+                    {% if commande.statut == 'Draft' %} bg-gray-100 text-gray-600
+                    {% elseif commande.statut == 'Ordered' %} bg-blue-100 text-blue-700
+                    {% elseif commande.statut == 'Shipped' %} bg-yellow-100 text-yellow-700
+                    {% elseif commande.statut == 'Partially Received' %} bg-purple-100 text-purple-700
+                    {% elseif commande.statut == 'Received' %} bg-green-100 text-green-700
+                    {% elseif commande.statut == 'Cancelled' %} bg-red-100 text-red-700
+                    {% else %} bg-gray-100 text-gray-600 {% endif %}">
+                    {{ commande.statut }}
+                </span>
+            </div>
+        </div>
+    </div>
 
-    <a href="{{ path('app_cmd_extern_edit', {'idCmdExt': cmd_extern.idCmdExt}) }}">edit</a>
+    <div class="bg-white rounded-xl shadow p-6 mb-6">
+        <h2 class="font-bold text-lg mb-4">Order Lines</h2>
+        <table class="w-full text-sm">
+            <thead>
+                <tr class="border-b text-left text-gray-400">
+                    <th class="pb-2">Product</th>
+                    <th class="pb-2">Quantity</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for ligne in lignes %}
+                <tr class="border-b">
+                    <td class="py-3">{{ ligne.produit.designation }}</td>
+                    <td class="py-3">{{ ligne.quantite }}</td>
+                </tr>
+                {% else %}
+                <tr><td colspan="2" class="text-gray-400 py-4 text-center">No lines found.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
 
-    {{ include('cmd_extern/_delete_form.html.twig') }}
+    {# Status update buttons #}
+    {% if commande.statut != 'Cancelled' and commande.statut != 'Received' %}
+    <div class="bg-white rounded-xl shadow p-6">
+        <h2 class="font-bold mb-4">Update Status</h2>
+        <div class="flex gap-3 flex-wrap">
+            {% set transitions = {
+                'Draft':              'Ordered',
+                'Ordered':            'Shipped',
+                'Shipped':            'Partially Received',
+                'Partially Received': 'Received'
+            } %}
+            {% if transitions[commande.statut] is defined %}
+            <button onclick="updateStatus('{{ transitions[commande.statut] }}')"
+                class="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-blue-700">
+                → Mark as {{ transitions[commande.statut] }}
+            </button>
+            {% endif %}
+            <button onclick="updateStatus('Cancelled')"
+                class="bg-red-100 text-red-700 px-4 py-2 rounded-lg text-sm hover:bg-red-200">
+                Cancel Order
+            </button>
+        </div>
+    </div>
+    {% endif %}
+
+</div>
+
+<script>
+function updateStatus(statut) {
+    fetch('{{ path('app_cmd_extern_status', {id: commande.id}) }}', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+        body: 'statut=' + encodeURIComponent(statut)
+    })
+    .then(r => r.json())
+    .then(data => { if (data.success) location.reload(); });
+}
+</script>
 {% endblock %}

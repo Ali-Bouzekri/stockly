@@ -1,0 +1,39 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Notifications - Stockly{% endblock %}
+
+{% block body %}
+<div class="max-w-3xl mx-auto">
+    <div class="flex justify-between items-center mb-6">
+        <h1 class="text-2xl font-bold">Notifications</h1>
+        <form method="post" action="{{ path('app_notification_mark_all_read') }}">
+            <button class="text-sm text-blue-600 hover:underline">Mark all as read</button>
+        </form>
+    </div>
+
+    <div class="bg-white rounded-xl shadow divide-y">
+        {% for notif in notifications %}
+            <div class="p-4 flex items-start gap-4 {{ notif.isRead ? 'opacity-60' : '' }}">
+                <div class="flex-1">
+                    <p class="{{ notif.isRead ? 'text-gray-500' : 'text-gray-800 font-semibold' }}">
+                        {{ notif.message }}
+                    </p>
+                    <p class="text-xs text-gray-400 mt-1">{{ notif.createdAt|date('d/m/Y H:i') }}</p>
+                </div>
+                <div class="flex gap-2">
+                    {% if notif.link %}
+                        <a href="{{ notif.link }}" class="text-blue-600 text-sm hover:underline">View</a>
+                    {% endif %}
+                    {% if not notif.isRead %}
+                        <form method="post" action="{{ path('app_notification_mark_read', {id: notif.id}) }}">
+                            <button class="text-gray-400 hover:text-gray-600 text-sm">Mark read</button>
+                        </form>
+                    {% endif %}
+                </div>
+            </div>
+        {% else %}
+            <p class="p-6 text-center text-gray-400">No notifications</p>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

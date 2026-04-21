@@ -78,4 +78,26 @@ final class CategorieController extends AbstractController
 
         return $this->redirectToRoute('app_categorie_index', [], Response::HTTP_SEE_OTHER);
     }
+    #[Route('/new-ajax', name: 'app_categorie_new_ajax', methods: ['POST'])]
+public function newAjax(Request $request, EntityManagerInterface $entityManager): Response
+{
+    $data = json_decode($request->getContent(), true);
+    $name = $data['name'] ?? null;
+
+    if (!$name) {
+        return $this->json(['error' => 'Name is required'], Response::HTTP_BAD_REQUEST);
+    }
+
+    $categorie = new Categorie();
+    $categorie->setNomCategory($name);
+
+    $entityManager->persist($categorie);
+    $entityManager->flush();
+
+    // Return the ID and Name so the JavaScript can add it to the list
+    return $this->json([
+        'id' => $categorie->getIdCategory(),
+        'name' => $categorie->getNomCategory()
+    ]);
+}
 }

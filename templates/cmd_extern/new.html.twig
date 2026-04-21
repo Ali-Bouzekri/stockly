@@ -1,11 +1,441 @@
 {% extends 'base.html.twig' %}
-
-{% block title %}New CmdExtern{% endblock %}
+{% block title %}New External Order - Bouzekri Solutions{% endblock %}
 
 {% block body %}
-    <h1>Create new CmdExtern</h1>
+<div class="px-8 pt-8 pb-16 max-w-7xl mx-auto">
 
-    {{ include('cmd_extern/_form.html.twig') }}
+    <div class="flex justify-between items-end mb-6">
+        <div>
+            <h1 class="text-2xl font-bold text-gray-800">New External Order</h1>
+            <p class="text-gray-500 mt-1">Create a purchase order from a supplier</p>
+        </div>
+    </div>
 
-    <a href="{{ path('app_cmd_extern_index') }}">back to list</a>
+    <div id="form-alert" class="hidden mb-4 px-4 py-3 rounded-lg text-sm font-semibold"></div>
+
+    <form id="orderForm" method="post" action="{{ path('app_cmd_extern_new') }}">
+
+            {# ══════════════════════════════════════════════════
+               BLOCK 1 — ORDER INFORMATION
+               What it contains:
+               • Supplier     — who you are buying from (required)
+               • Date         — auto-set to today, read-only
+               • Status       — always "Brouillon" on creation, shown for info
+               • Notes        — optional free-text remarks saved with the order
+            ══════════════════════════════════════════════════ #}
+            <div class="bg-white rounded-xl border shadow-sm p-6 mb-6">
+                <div class="flex items-center gap-2 mb-5">
+                    <div class="w-1 h-5 bg-blue-600 rounded-full"></div>
+                    <h2 class="font-bold text-gray-700 text-base">Order Information</h2>
+                </div>
+
+                <div class="grid grid-cols-2 gap-6 mb-5">
+
+                    {# ── Supplier ── #}
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-1">
+                            Supplier <span class="text-red-500">*</span>
+                        </label>
+                        {# Search box — filters the <select> below in real time #}
+                        <input type="text" id="supplier-search" placeholder="🔍  Type to search suppliers…"
+                               class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm bg-gray-50
+                                      focus:outline-none focus:ring-2 focus:ring-blue-400 mb-1"
+                               oninput="filterSelect('fournisseur','supplier-search')">
+                        <select name="fournisseur" id="fournisseur"
+                                class="w-full border border-gray-300 rounded-lg px-4 py-2.5 bg-white
+                                       focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer text-sm">
+                            <option value="">— Select supplier —</option>
+                            {% for f in fournisseurs %}
+                                <option value="{{ f.idFournisseur }}">{{ f.denominateur }}</option>
+                            {% endfor %}
+                        </select>
+                        <p class="text-xs text-gray-400 mt-1">The company or vendor supplying the goods.</p>
+                    </div>
+
+                    <div class="flex flex-col gap-4">
+                        {# ── Date ── #}
+                        <div>
+                            <label class="block text-sm font-semibold text-gray-700 mb-1">Order Date</label>
+                            <input type="text" value="{{ 'now'|date('d/m/Y') }}" disabled
+                                   class="w-full border border-gray-200 rounded-lg px-4 py-2.5 bg-gray-50
+                                          text-gray-500 cursor-not-allowed text-sm">
+                            <p class="text-xs text-gray-400 mt-1">Automatically set to today.</p>
+                        </div>
+
+                        {# ── Status (read-only info badge) ── #}
+                        <div>
+                            <label class="block text-sm font-semibold text-gray-700 mb-1">Initial Status</label>
+                            <div class="flex items-center gap-2 px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg">
+                                <span class="w-2 h-2 rounded-full bg-gray-400 inline-block"></span>
+                                <span class="text-sm text-gray-600 font-semibold">Brouillon</span>
+                                <span class="text-xs text-gray-400 ml-1">(draft — can be updated after saving)</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                {# ── Notes ── #}
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-1">
+                        Remarks / Notes
+                        <span class="text-gray-400 font-normal">(optional)</span>
+                    </label>
+                    <textarea name="notes" rows="2" placeholder="e.g. Urgent delivery, reference number, special instructions…"
+                              class="w-full border border-gray-300 rounded-lg px-4 py-2.5 bg-gray-50
+                                     focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none text-sm"></textarea>
+                </div>
+            </div>
+
+            {# ══════════════════════════════════════════════════
+               BLOCK 2 — PRODUCTS TO ORDER
+               Mini-filter bar: search by name + filter by category/subcategory
+               Each row: product picker  |  quantity  |  current stock  |  unit  |  remove
+            ══════════════════════════════════════════════════ #}
+            <div class="bg-white rounded-xl border shadow-sm p-6 mb-6">
+                <div class="flex justify-between items-center mb-4">
+                    <div class="flex items-center gap-2">
+                        <div class="w-1 h-5 bg-blue-600 rounded-full"></div>
+                        <h2 class="font-bold text-gray-700 text-base">Products to Order</h2>
+                    </div>
+                    <button type="button" onclick="addLine()"
+                            class="text-sm bg-blue-50 text-blue-600 hover:bg-blue-100 px-4 py-2 rounded-lg
+                                   font-semibold transition-colors flex items-center gap-1">
+                        <span class="text-lg leading-none">+</span> Add Product
+                    </button>
+                </div>
+
+                {# ── Mini filter bar ── #}
+                <div class="bg-gray-50 border border-gray-200 rounded-lg px-4 py-3 mb-4 flex flex-wrap gap-3 items-center">
+                    <span class="text-xs font-semibold text-gray-500 uppercase tracking-wide">Filter products:</span>
+                    <input type="text" id="prod-search" placeholder="🔍 Search by name…"
+                           class="border border-gray-200 rounded-lg px-3 py-1.5 text-sm bg-white
+                                  focus:outline-none focus:ring-2 focus:ring-blue-400 w-44"
+                           oninput="rebuildSelects()">
+                    <select id="prod-cat-filter"
+                            class="border border-gray-200 rounded-lg px-3 py-1.5 text-sm bg-white
+                                   focus:outline-none focus:ring-2 focus:ring-blue-400 cursor-pointer"
+                            onchange="onCatFilterChange()">
+                        <option value="">All Categories</option>
+                        {# Built dynamically from PRODUITS data — see JS #}
+                    </select>
+                    <select id="prod-subcat-filter"
+                            class="border border-gray-200 rounded-lg px-3 py-1.5 text-sm bg-white
+                                   focus:outline-none focus:ring-2 focus:ring-blue-400 cursor-pointer"
+                            onchange="rebuildSelects()">
+                        <option value="">All Subcategories</option>
+                    </select>
+                    <select id="prod-stock-filter"
+                            class="border border-gray-200 rounded-lg px-3 py-1.5 text-sm bg-white
+                                focus:outline-none focus:ring-2 focus:ring-blue-400 cursor-pointer"
+                            onchange="rebuildSelects()">
+                        <option value="">All Stock</option>
+                        <option value="outofstock" selected>⚠️ Out of Stock</option>
+                        <option value="low">🟠 Low Stock</option>
+                        <option value="instock">✅ In Stock</option>
+                    </select>
+                    <button type="button" onclick="clearFilters()"
+                            class="text-xs text-gray-400 hover:text-blue-600 underline ml-auto">
+                        Clear filters
+                    </button>
+                </div>
+
+                <div class="overflow-x-auto">
+                    <table class="w-full text-sm">
+                        <thead>
+                            <tr class="border-b text-gray-500 text-left bg-gray-50">
+                                <th class="pb-3 pt-2 px-3 font-semibold rounded-tl-lg">Product</th>
+                                <th class="pb-3 pt-2 px-3 font-semibold w-28">Quantity</th>
+                                <th class="pb-3 pt-2 px-3 font-semibold w-24 text-center">In Stock</th>
+                                <th class="pb-3 pt-2 px-3 font-semibold w-16 text-center">Unit</th>
+                                <th class="pb-3 pt-2 px-3 w-10 rounded-tr-lg"></th>
+                            </tr>
+                        </thead>
+                        <tbody id="lines-body"></tbody>
+                    </table>
+                </div>
+
+                <p id="no-lines-msg" class="text-center text-gray-400 py-8 text-sm">
+                    No products added yet. Click <strong>+ Add Product</strong> to start.
+                </p>
+            </div>
+
+            <div class="flex justify-end gap-3">
+                <a href="{{ path('app_cmd_extern_index') }}"
+                   class="px-6 py-2.5 border rounded-lg text-gray-600 hover:bg-gray-50 font-semibold transition-colors">
+                    Cancel
+                </a>
+                <button type="submit" id="submitBtn"
+                        class="px-6 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700
+                               font-semibold shadow transition-colors flex items-center gap-2">
+                    <span id="submitBtnText">Submit Order</span>
+                    <svg id="submitSpinner" class="hidden animate-spin h-4 w-4 text-white"
+                         xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"></path>
+                    </svg>
+                </button>
+            </div>
+
+        </form>
+    </div>
+</main>
+</div>
+
+{# ── Product data injected for JS ── #}
+<script>
+const PRODUITS = [
+    {% for p in produits %}
+    {
+        id:      {{ p.idProduit }},
+        name:    {{ p.designation|json_encode|raw }},
+        stock:   {{ p.qteStock }},
+        seuil:   {{ p.seuilAlert }},
+        unit:    {{ p.unite ? p.unite.nomunite|json_encode|raw : '""' }},
+        cat:     {{ p.sousCategorie and p.sousCategorie.categorie ? p.sousCategorie.categorie.nomCategory|json_encode|raw : '""' }},
+        catId:   {{ p.sousCategorie and p.sousCategorie.categorie ? p.sousCategorie.categorie.idCategory : 0 }},
+        subcat:  {{ p.sousCategorie ? p.sousCategorie.nomSousCat|json_encode|raw : '""' }},
+        subcatId:{{ p.sousCategorie ? p.sousCategorie.idSousCat : 0 }},
+    },
+    {% endfor %}
+];
+</script>
+{% endblock %}
+
+{% block javascripts %}
+<script>
+// ─── Filter helpers ────────────────────────────────────────────────────────
+
+/** Filter a <select> options by text using a search input */
+function filterSelect(selectId, inputId) {
+    const q   = document.getElementById(inputId).value.trim().toLowerCase();
+    const sel = document.getElementById(selectId);
+    [...sel.options].forEach(opt => {
+        if (!opt.value) { opt.style.display = ''; return; }
+        opt.style.display = opt.text.toLowerCase().includes(q) ? '' : 'none';
+    });
+}
+
+/** Populate category filter from PRODUITS data */
+function buildCatFilter() {
+    const sel  = document.getElementById('prod-cat-filter');
+    const cats = [...new Map(
+        PRODUITS.filter(p => p.catId).map(p => [p.catId, p.cat])
+    ).entries()];
+    cats.forEach(([id, name]) => {
+        const opt = document.createElement('option');
+        opt.value = id;
+        opt.textContent = name;
+        sel.appendChild(opt);
+    });
+}
+
+function onCatFilterChange() {
+    const catId  = document.getElementById('prod-cat-filter').value;
+    const subSel = document.getElementById('prod-subcat-filter');
+    subSel.innerHTML = '<option value="">All Subcategories</option>';
+
+    if (catId) {
+        const subs = [...new Map(
+            PRODUITS
+                .filter(p => p.catId == catId && p.subcatId)
+                .map(p => [p.subcatId, p.subcat])
+        ).entries()];
+        subs.forEach(([id, name]) => {
+            const opt = document.createElement('option');
+            opt.value = id;
+            opt.textContent = name;
+            subSel.appendChild(opt);
+        });
+    }
+    rebuildSelects();
+}
+
+/** Get filtered product list based on current filter bar state */
+function getFilteredProducts() {
+    const q      = (document.getElementById('prod-search').value || '').toLowerCase();
+    const catId  = document.getElementById('prod-cat-filter').value;
+    const subId  = document.getElementById('prod-subcat-filter').value;
+    const stock  = document.getElementById('prod-stock-filter').value;
+
+    return PRODUITS.filter(p => {
+        const matchQ     = !q     || p.name.toLowerCase().includes(q);
+        const matchCat   = !catId || p.catId    == catId;
+        const matchSub   = !subId || p.subcatId == subId;
+        const matchStock = !stock
+            || (stock === 'outofstock' && p.stock <= 0)
+            || (stock === 'low'        && p.stock > 0 && p.stock <= p.seuil)
+            || (stock === 'instock'    && p.stock > p.seuil);
+        return matchQ && matchCat && matchSub && matchStock;
+    });
+}
+
+/** Re-render all existing line selects to reflect current filters */
+function rebuildSelects() {
+    const filtered = getFilteredProducts();
+    document.querySelectorAll('.product-select').forEach(sel => {
+        const current = sel.value;
+        sel.innerHTML = '<option value="">— Select product —</option>';
+        filtered.forEach(p => {
+            const opt = document.createElement('option');
+            opt.value = p.id;
+            if (p.stock <= 0) {
+                opt.textContent = `${p.name} — Out of Stock ⚠️`;
+                opt.style.color = '#dc2626';
+            } else if (p.stock <= p.seuil) {
+                opt.textContent = `${p.name} (Stock: ${p.stock}) 🟠`;
+                opt.style.color = '#ea580c';
+            } else {
+                opt.textContent = `${p.name} (Stock: ${p.stock})`;
+                opt.style.color = '';
+            }
+            if (p.id == current) opt.selected = true;
+            sel.appendChild(opt);
+        });
+    });
+}
+function clearFilters() {
+    document.getElementById('prod-search').value = '';
+    document.getElementById('prod-cat-filter').value = '';
+    document.getElementById('prod-subcat-filter').innerHTML = '<option value="">All Subcategories</option>';
+    rebuildSelects();
+}
+
+// ─── Line management ───────────────────────────────────────────────────────
+let lineCount = 0;
+
+function addLine() {
+    lineCount++;
+    const idx  = lineCount;
+    const body = document.getElementById('lines-body');
+    document.getElementById('no-lines-msg').style.display = 'none';
+
+    const tr = document.createElement('tr');
+    tr.className = 'border-b last:border-0 hover:bg-gray-50 transition-colors';
+    tr.id = `line-${idx}`;
+    tr.innerHTML = `
+        <td class="py-3 px-3">
+            <select name="produits[${idx}][id]"
+                    class="product-select w-full border border-gray-300 rounded-lg px-3 py-2 bg-white
+                           focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer text-sm"
+                    onchange="updateRow(${idx}, this.value)">
+                <option value="">— Select product —</option>
+            </select>
+        </td>
+        <td class="py-3 px-3">
+            <input type="number" name="produits[${idx}][quantite]" min="1" value="1"
+                   class="w-full border border-gray-300 rounded-lg px-3 py-2 bg-gray-50
+                          focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm">
+        </td>
+        <td class="py-3 px-3 text-center">
+            <span id="stock-${idx}" class="text-gray-400 text-xs font-semibold">—</span>
+        </td>
+        <td class="py-3 px-3 text-center">
+            <span id="unit-${idx}" class="text-gray-400 text-xs">—</span>
+        </td>
+        <td class="py-3 px-3 text-center">
+            <button type="button" onclick="removeLine(${idx})"
+                    class="text-red-400 hover:text-red-600 text-xl font-bold leading-none">×</button>
+        </td>
+    `;
+    body.appendChild(tr);
+    rebuildSelects(); // populate the new select with current filter
+    // Auto-select preselected product on first line
+    if (PRESELECTED_ID && idx === 1) {
+        setTimeout(() => {
+            const sel = document.querySelector('.product-select');
+            if (sel) {
+                sel.value = PRESELECTED_ID;
+                updateRow(1, PRESELECTED_ID);
+            }
+        }, 50);
+    }
+}
+
+function updateRow(idx, produitId) {
+    const p = PRODUITS.find(p => p.id == produitId);
+    const stockEl = document.getElementById(`stock-${idx}`);
+    const unitEl  = document.getElementById(`unit-${idx}`);
+
+    if (p) {
+        unitEl.textContent  = p.unit  || '—';
+        stockEl.textContent = p.stock;
+        stockEl.className   = p.stock === 0
+            ? 'text-red-500 text-xs font-bold'
+            : p.stock <= 5
+            ? 'text-orange-500 text-xs font-bold'
+            : 'text-green-600 text-xs font-bold';
+    } else {
+        unitEl.textContent  = '—';
+        stockEl.textContent = '—';
+        stockEl.className   = 'text-gray-400 text-xs font-semibold';
+    }
+}
+
+function removeLine(idx) {
+    document.getElementById(`line-${idx}`)?.remove();
+    if (document.querySelectorAll('#lines-body tr').length === 0) {
+        document.getElementById('no-lines-msg').style.display = '';
+    }
+}
+
+// ─── Form submit ───────────────────────────────────────────────────────────
+document.getElementById('orderForm').addEventListener('submit', async function (e) {
+    e.preventDefault();
+
+    const fournisseur = document.getElementById('fournisseur').value;
+    if (!fournisseur) { showAlert('Please select a supplier.', 'error'); return; }
+
+    const rows = document.querySelectorAll('#lines-body tr');
+    if (rows.length === 0) { showAlert('Please add at least one product.', 'error'); return; }
+
+    let valid = true;
+    rows.forEach(row => { if (row.querySelector('select') && !row.querySelector('select').value) valid = false; });
+    if (!valid) { showAlert('Please select a product for every line.', 'error'); return; }
+
+    const btn     = document.getElementById('submitBtn');
+    const spinner = document.getElementById('submitSpinner');
+    const btnText = document.getElementById('submitBtnText');
+    btn.disabled = true;
+    spinner.classList.remove('hidden');
+    btnText.textContent = 'Submitting…';
+    hideAlert();
+
+    try {
+        const res  = await fetch(this.action, {
+            method: 'POST',
+            headers: { 'X-Requested-With': 'XMLHttpRequest' },
+            body:   new FormData(this),
+        });
+        const json = await res.json();
+        if (json.success) {
+            showAlert('✅ Order submitted! Redirecting…', 'success');
+            setTimeout(() => window.location.href = '{{ path("app_cmd_extern_index") }}', 1000);
+        } else {
+            showAlert(json.error || 'Something went wrong.', 'error');
+        }
+    } catch {
+        showAlert('Network error. Please try again.', 'error');
+    } finally {
+        btn.disabled = false;
+        spinner.classList.add('hidden');
+        btnText.textContent = 'Submit Order';
+    }
+});
+
+function showAlert(msg, type) {
+    const el = document.getElementById('form-alert');
+    el.textContent = msg;
+    el.className = type === 'success'
+        ? 'mb-4 px-4 py-3 rounded-lg text-sm font-semibold bg-green-100 text-green-700'
+        : 'mb-4 px-4 py-3 rounded-lg text-sm font-semibold bg-red-100 text-red-700';
+}
+function hideAlert() { document.getElementById('form-alert').className = 'hidden'; }
+
+// ─── Init ──────────────────────────────────────────────────────────────────
+buildCatFilter();
+addLine();
+const PRESELECTED_ID = {{ preselectedId ?? 'null' }};
+</script>
+
+
 {% endblock %}

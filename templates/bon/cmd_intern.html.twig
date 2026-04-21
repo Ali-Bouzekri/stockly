@@ -1,0 +1,90 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Bon de Commande Interne #{{ commande.numero }}</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 2cm; }
+        .header { text-align: center; margin-bottom: 2cm; }
+        .logo { font-size: 24px; font-weight: bold; color: #2563eb; }
+        h1 { font-size: 20px; text-transform: uppercase; }
+        .info { display: flex; justify-content: space-between; margin-bottom: 1cm; }
+        table { width: 100%; border-collapse: collapse; margin: 1cm 0; }
+        th, td { border: 1px solid #000; padding: 8px; text-align: left; }
+        .signatures { margin-top: 2cm; }
+        .footer { margin-top: 1cm; font-size: 10px; text-align: center; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="logo">Stockly</div>
+        <h1>Bon de Commande Interne</h1>
+        <p>N° {{ commande.numero }} / {{ commande.dateCI|date('Y') }}</p>
+    </div>
+
+    <div class="info">
+        <div>
+            <strong>Demandeur :</strong><br>
+            {{ commande.fonctionnaire.prenom }} {{ commande.fonctionnaire.nom }}<br>
+            {{ commande.fonctionnaire.email }}<br>
+            {{ commande.fonctionnaire.organigramme ? commande.fonctionnaire.organigramme.departement : '' }}
+        </div>
+        <div>
+            <strong>Date de demande :</strong> {{ commande.dateCI|date('d/m/Y H:i') }}<br>
+            <strong>Date de réception :</strong> {{ commande.receivedAt ? commande.receivedAt|date('d/m/Y H:i') : '—' }}
+        </div>
+    </div>
+
+    <h2>Articles demandés</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>Produit</th>
+                <th>Quantité</th>
+                <th>Unité</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for ligne in commande.lignesCmdInterns %}
+            <tr>
+                <td>{{ ligne.produit.designation }}</td>
+                <td>{{ ligne.quantite }}</td>
+                <td>{{ ligne.produit.unite ? ligne.produit.unite.nomunite : '' }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <h2>Historique des approbations</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>Approbateur</th>
+                <th>Département</th>
+                <th>Statut</th>
+                <th>Date</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for step in commande.approvalSteps %}
+            <tr>
+                <td>{{ step.approver.prenom }} {{ step.approver.nom }}</td>
+                <td>{{ step.approver.organigramme ? step.approver.organigramme.departement : '' }}</td>
+                <td>{{ step.status == 'approved' ? 'Approuvé' : 'Rejeté' }}</td>
+                <td>{{ step.approvedAt ? step.approvedAt|date('d/m/Y H:i') : '—' }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <div class="signatures">
+        <p>Réceptionné par : _________________________</p>
+        <p>Le {{ commande.receivedAt ? commande.receivedAt|date('d/m/Y') : '__________' }}</p>
+    </div>
+
+    <div class="footer">
+        Document généré le {{ "now"|date('d/m/Y H:i') }} - Stockly
+    </div>
+</body>
+</html>

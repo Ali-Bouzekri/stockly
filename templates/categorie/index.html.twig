@@ -1,35 +1,292 @@
 {% extends 'base.html.twig' %}
 
-{% block title %}Categorie index{% endblock %}
+{% block title %}Categories Management - Inventory{% endblock %}
 
 {% block body %}
-    <h1>Categorie index</h1>
 
-    <table class="table">
-        <thead>
-            <tr>
-                <th>IdCategory</th>
-                <th>NomCategory</th>
-                <th>actions</th>
-            </tr>
-        </thead>
-        <tbody>
-        {% for categorie in categories %}
-            <tr>
-                <td>{{ categorie.idCategory }}</td>
-                <td>{{ categorie.nomCategory }}</td>
-                <td>
-                    <a href="{{ path('app_categorie_show', {'idCategory': categorie.idCategory}) }}">show</a>
-                    <a href="{{ path('app_categorie_edit', {'idCategory': categorie.idCategory}) }}">edit</a>
-                </td>
-            </tr>
-        {% else %}
-            <tr>
-                <td colspan="3">no records found</td>
-            </tr>
-        {% endfor %}
-        </tbody>
-    </table>
+<div class="flex h-screen bg-gray-100">
+    {# <aside class="w-64 bg-white border-r flex flex-col">
+        
+        <nav class="mt-4 flex-1">
+            <a href="{{ path('app_dashboard') }}" class="block px-6 py-2 text-gray-600 hover:bg-gray-50">Dashboard</a>
+            
+            <details class="group [&_summary::-webkit-details-marker]:hidden" open>
+                <summary class="flex justify-between items-center px-6 py-2 text-gray-800 font-semibold cursor-pointer list-none">
+                    <span>Inventory</span>
+                    <span class="transition duration-300 group-open:rotate-180">⌵</span>
+                </summary>
+                <div class="bg-gray-50 pb-2">
+                    <a href="{{ path('app_produit_index') }}" data-turbo-frame="main-content" class="block px-10 py-2 text-sm text-gray-600 hover:text-blue-600 hover:bg-blue-50 transition-colors">
+                        📦 Products
+                    </a>
+                    <a href="{{ path('app_categorie_index') }}" data-turbo-frame="main-content" class="block px-10 py-2 text-sm text-blue-600 bg-blue-50 border-l-4 border-blue-600 font-semibold">
+                        🗂️ Categories
+                    </a>
+                </div>
+            </details>
 
-    <a href="{{ path('app_categorie_new') }}">Create new</a>
+            <a href="#" data-turbo-frame="main-content" class="block px-6 py-2 text-gray-600 hover:bg-gray-50 italic">Internal Operations ⌵</a>
+            <a href="#" data-turbo-frame="main-content" class="block px-6 py-2 text-gray-600 hover:bg-gray-50 italic">Suppliers ⌵</a>
+            <a href="#" data-turbo-frame="main-content" class="block px-6 py-2 text-gray-600 hover:bg-gray-50 italic">Organisation ⌵</a>
+            <a href="#" data-turbo-frame="main-content" class="block px-6 py-2 text-gray-600 hover:bg-gray-50 italic">Reports ⌵</a>
+            <a href="#" data-turbo-frame="main-content" class="block px-6 py-6 text-gray-500 hover:bg-gray-50 border-t">⚙️ Settings</a>
+        </nav>
+    </aside> #}
+
+    <main class="flex-1 p-8 overflow-y-auto">
+        {# Header with Search #}
+        <header class="flex justify-between items-center mb-8">
+            <div class="relative w-1/3">
+                <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-gray-400">🔍</span>
+                <input type="text" id="search-categories" placeholder="Search Categories or Sub-Categories..." class="border py-2 pr-3 pl-10 rounded w-full focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white">
+            </div>
+            <div class="flex gap-6 items-center">
+                <span class="text-xl cursor-pointer">🔔</span>
+                <div class="w-10 h-10 bg-gray-300 rounded-full flex items-center justify-center text-white font-bold cursor-pointer">👤</div>
+            </div>
+        </header>
+
+        {# Title Section #}
+        <div class="flex justify-between items-end mb-8">
+            <div>
+                <h1 class="text-3xl font-bold text-gray-800">Categories Management</h1>
+                <p class="text-gray-500 mt-1">Organize your products by categories and subcategories</p>
+            </div>
+            <button onclick="openModal('add-category-modal')" class="bg-blue-600 text-white px-6 py-2.5 rounded-lg font-bold shadow hover:bg-blue-700 transition-colors flex items-center gap-2">
+                <span>+</span> Add Category
+            </button>
+        </div>
+
+        {# Empty State #}
+        <div id="empty-state" class="text-center py-16">
+            <div class="text-6xl mb-4">📁</div>
+            <h3 class="text-xl font-semibold text-gray-700 mb-2">No categories yet</h3>
+            <p class="text-gray-500 mb-6">Get started by creating your first category</p>
+            <button onclick="openModal('add-category-modal')" class="bg-blue-600 text-white px-6 py-2.5 rounded-lg font-bold hover:bg-blue-700 transition-colors">
+                Create First Category
+            </button>
+        </div>
+
+        {# Categories List #}
+        <div id="categories-list" class="space-y-3">
+            {# Categories will be populated here #}
+        </div>
+
+    </main>
+</div>
+
+
+{# ========== MODAL: Add Category ========== #}
+<div id="add-category-modal" class="hidden fixed inset-0 bg-gray-900 bg-opacity-50 z-50 flex items-center justify-center backdrop-blur-sm">
+    <div class="bg-white rounded-xl shadow-xl w-full max-w-md p-6 relative">
+        <button onclick="closeModal('add-category-modal')" class="absolute top-4 right-4 text-gray-400 hover:text-gray-600 text-2xl">&times;</button>
+        
+        <h3 class="text-2xl font-bold text-gray-800 mb-2">Add New Category</h3>
+        <p class="text-gray-500 mb-6">Create a new product category</p>
+        
+        <div class="mb-6">
+            <label class="block text-sm font-semibold text-gray-700 mb-2">Category Name</label>
+            <input type="text" id="category-name-input" placeholder="e.g., Electronics" class="w-full border border-gray-300 rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-blue-500 focus:border-transparent focus:outline-none bg-white">
+        </div>
+
+        <div class="flex justify-end gap-3">
+            <button onclick="closeModal('add-category-modal')" class="px-5 py-2 border border-gray-300 rounded-lg text-gray-600 hover:bg-gray-50 font-semibold transition-colors">Cancel</button>
+            <button onclick="addCategory()" class="px-5 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-semibold transition-colors">Add</button>
+        </div>
+    </div>
+</div>
+
+{# ========== MODAL: Add Sub-Category ========== #}
+<div id="add-subcategory-modal" class="hidden fixed inset-0 bg-gray-900 bg-opacity-50 z-50 flex items-center justify-center backdrop-blur-sm">
+    <div class="bg-white rounded-xl shadow-xl w-full max-w-md p-6 relative">
+        <button onclick="closeModal('add-subcategory-modal')" class="absolute top-4 right-4 text-gray-400 hover:text-gray-600 text-2xl">&times;</button>
+        
+        <h3 class="text-2xl font-bold text-gray-800 mb-2">Add New Sub Category</h3>
+        <p class="text-gray-500 mb-6">Add a subcategory to organize products further</p>
+        
+        <div class="mb-6">
+            <label class="block text-sm font-semibold text-gray-700 mb-2">Parent Category</label>
+            <select id="parent-category-select" class="w-full border border-gray-300 rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-blue-500 focus:border-transparent focus:outline-none bg-white">
+                <option value="">Select a category</option>
+            </select>
+        </div>
+
+        <div class="mb-6">
+            <label class="block text-sm font-semibold text-gray-700 mb-2">Sub Category Name</label>
+            <input type="text" id="subcategory-name-input" placeholder="e.g., Laptops" class="w-full border border-gray-300 rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-blue-500 focus:border-transparent focus:outline-none bg-white">
+        </div>
+
+        <div class="flex justify-end gap-3">
+            <button onclick="closeModal('add-subcategory-modal')" class="px-5 py-2 border border-gray-300 rounded-lg text-gray-600 hover:bg-gray-50 font-semibold transition-colors">Cancel</button>
+            <button onclick="addSubcategory()" class="px-5 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-semibold transition-colors">Add Sub Category</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    //let categoriesData = JSON.parse(localStorage.getItem('categories')) || [];
+    let categoriesData = {{ categories|json_encode|raw }};
+    function openModal(modalId) {
+    [cite_start]document.getElementById(modalId).classList.remove('hidden'); [cite: 17]
+    
+    // Ensure the dropdown is populated whenever the subcategory modal opens
+    if (modalId === 'add-subcategory-modal') {
+        const select = document.getElementById('parent-category-select');
+        select.innerHTML = '<option value="">Select a category</option>';
+        categoriesData.forEach(cat => {
+            const option = new Option(cat.name, cat.id);
+            select.add(option);
+        });
+    }
+}
+
+    function closeModal(modalId) {
+        document.getElementById(modalId).classList.add('hidden');
+    }
+
+    function addCategory() {
+        const nameInput = document.getElementById('category-name-input');
+        const name = nameInput.value.trim();
+
+        if (!name) {
+            alert('Please enter a category name');
+            return;
+        }
+
+        const newCategory = {
+            id: Date.now(),
+            name: name,
+            subcategories: []
+        };
+
+        categoriesData.push(newCategory);
+       // localStorage.setItem('categories', JSON.stringify(categoriesData));
+
+        nameInput.value = '';
+        closeModal('add-category-modal');
+        renderCategories();
+    }
+
+    function addSubcategory() {
+        const parentId = document.getElementById('parent-category-select').value;
+        const nameInput = document.getElementById('subcategory-name-input');
+        const name = nameInput.value.trim();
+
+        if (!parentId) {
+            alert('Please select a parent category');
+            return;
+        }
+
+        if (!name) {
+            alert('Please enter a subcategory name');
+            return;
+        }
+
+        const category = categoriesData.find(c => c.id == parentId);
+        if (category) {
+            category.subcategories.push({
+                id: Date.now(),
+                name: name
+            });
+        }
+
+       // localStorage.setItem('categories', JSON.stringify(categoriesData));
+        nameInput.value = '';
+        closeModal('add-subcategory-modal');
+        renderCategories();
+    }
+
+    function deleteCategory(categoryId) {
+        if (confirm('Are you sure you want to delete this category?')) {
+            categoriesData = categoriesData.filter(c => c.id !== categoryId);
+           // localStorage.setItem('categories', JSON.stringify(categoriesData));
+            renderCategories();
+        }
+    }
+
+    function deleteSubcategory(categoryId, subcategoryId) {
+        const category = categoriesData.find(c => c.id === categoryId);
+        if (category) {
+            category.subcategories = category.subcategories.filter(s => s.id !== subcategoryId);
+          //  localStorage.setItem('categories', JSON.stringify(categoriesData));
+            renderCategories();
+        }
+    }
+
+    function renderCategories() {
+        const listContainer = document.getElementById('categories-list');
+        const emptyState = document.getElementById('empty-state');
+
+        if (categoriesData.length === 0) {
+            emptyState.classList.remove('hidden');
+            listContainer.innerHTML = '';
+            return;
+        }
+
+        emptyState.classList.add('hidden');
+
+        listContainer.innerHTML = categoriesData.map(category => `
+            <div class="bg-white rounded-lg border border-gray-200 overflow-hidden hover:shadow-md transition-shadow">
+                <div class="flex items-center justify-between p-4 cursor-pointer" onclick="toggleCategory(this)">
+                    <div class="flex items-center gap-3 flex-1">
+                        <span class="text-lg transition-transform duration-300 ${category.subcategories.length > 0 ? 'rotate-0' : 'opacity-30'}">▼</span>
+                        <div>
+                            <h4 class="text-lg font-semibold text-gray-800">${category.nomCategory}</h4>
+                            ${category.subcategories.length > 0 ? `<p class="text-sm text-gray-500">${category.subcategories.length} subcategories</p>` : ''}
+                        </div>
+                    </div>
+                    <div class="flex gap-2 items-center" onclick="event.stopPropagation()">
+                        <button onclick="openSubcategoryModal(${category.idCategory})" title="Add Sub-Category" class="p-2 text-gray-600 hover:bg-blue-50 hover:text-blue-600 rounded transition-colors">
+    ➕
+</button>
+                        <button onclick="deleteCategory(${category.idCategory})" title="Delete Category" class="p-2 text-gray-600 hover:bg-red-50 hover:text-red-600 rounded transition-colors">
+                            🗑️
+                        </button>
+                    </div>
+                </div>
+
+                <div class="subcategories-container hidden bg-gray-50 border-t border-gray-200">
+                    ${category.subcategories.length > 0 ? category.subcategories.map(sub => `
+                        <div class="flex items-center justify-between p-4 ml-8 border-b border-gray-200 last:border-b-0">
+                            <span class="text-gray-700">${sub.name}</span>
+                            <button onclick="deleteSubcategory(${category.id}, ${sub.id}); event.stopPropagation();" class="p-1 text-gray-400 hover:text-red-600 transition-colors">
+                                🗑️
+                            </button>
+                        </div>
+                    `).join('') : '<p class="p-4 text-gray-500 text-sm">No subcategories yet</p>'}
+                </div>
+            </div>
+        `).join('');
+    }
+
+    function toggleCategory(element) {
+        const container = element.nextElementSibling;
+        container.classList.toggle('hidden');
+        const arrow = element.querySelector('span:first-child');
+        arrow.classList.toggle('rotate-180');
+    }
+
+    function openSubcategoryModal(parentId) {
+    openModal('add-subcategory-modal');
+    const select = document.getElementById('parent-category-select');
+    if (parentId && select) {
+        select.value = parentId; // Automatically selects the category you clicked
+    }
+}
+
+    // Search functionality
+    document.getElementById('search-categories').addEventListener('input', (e) => {
+        const searchTerm = e.target.value.toLowerCase();
+        const items = document.querySelectorAll('[data-category-item]');
+        
+        items.forEach(item => {
+            const text = item.textContent.toLowerCase();
+            item.style.display = text.includes(searchTerm) ? '' : 'none';
+        });
+    });
+
+    // Initialize
+    renderCategories();
+</script>
+
 {% endblock %}

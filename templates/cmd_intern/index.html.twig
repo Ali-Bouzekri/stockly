@@ -1,37 +1,150 @@
 {% extends 'base.html.twig' %}
-
-{% block title %}CmdIntern index{% endblock %}
+{% block title %}Internal Orders - Bouzekri Solutions{% endblock %}
 
 {% block body %}
-    <h1>CmdIntern index</h1>
+<div class="flex h-screen bg-gray-100">
+<main class="flex-1 overflow-hidden">
+<div class="sticky top-0 z-30 bg-gray-100 px-8 pt-8 pb-4">
 
-    <table class="table">
-        <thead>
-            <tr>
-                <th>IdCmdInt</th>
-                <th>DateCI</th>
-                <th>Statut</th>
-                <th>actions</th>
+    
+
+    <div class="flex justify-between items-end mb-6">
+        <div>
+            <h1 class="text-2xl font-bold text-gray-800">Internal Orders</h1>
+            <p class="text-gray-500 mt-1">Manage internal stock requests</p>
+        </div>
+        <a href="{{ path('app_cmd_intern_new') }}"
+           class="bg-blue-600 text-white px-6 py-2.5 rounded-lg font-bold shadow hover:bg-blue-700 transition-colors flex items-center gap-2">
+            <span>+</span> New Internal Order
+        </a>
+    </div>
+
+    {% for msg in app.flashes('success') %}
+        <div class="mb-4 px-4 py-3 bg-green-100 text-green-700 rounded-lg font-semibold text-sm">✅ {{ msg }}</div>
+    {% endfor %}
+    {% for msg in app.flashes('error') %}
+        <div class="mb-4 px-4 py-3 bg-red-100 text-red-700 rounded-lg font-semibold text-sm">❌ {{ msg }}</div>
+    {% endfor %}
+
+    <div class="bg-white border rounded-xl p-4 flex gap-4 items-center shadow-sm mb-4">
+        <select id="status-filter" class="border rounded-lg py-2 px-4 text-gray-600 bg-gray-50 focus:outline-none cursor-pointer">
+            <option value="all">Status: All</option>
+            <option value="Pending">Pending</option>
+            <option value="Approved">Approved</option>
+            <option value="In Preparation">In Preparation</option>
+            <option value="Ready">Ready</option>
+            <option value="Delivered">Delivered</option>
+            <option value="Rejected">Rejected</option>
+        </select>
+        <input type="text" id="search-input" placeholder="Search by requester…"
+               class="border py-2 px-4 rounded-lg bg-gray-50 focus:outline-none focus:ring-1 focus:ring-blue-500 flex-1">
+    </div>
+</div>
+
+<div class="bg-white border rounded-xl shadow-sm overflow-auto max-h-[65vh] mx-8">
+    <table class="w-full text-left border-collapse">
+        <thead class="sticky top-0 z-20">
+            <tr class="bg-gray-50 border-b">
+                <th class="py-4 px-6 font-semibold text-gray-600">#</th>
+                <th class="py-4 px-6 font-semibold text-gray-600">Date</th>
+                <th class="py-4 px-6 font-semibold text-gray-600">Requester</th>
+                <th class="py-4 px-6 font-semibold text-gray-600">Products</th>
+                <th class="py-4 px-6 font-semibold text-gray-600">Status</th>
+                <th class="py-4 px-6 font-semibold text-gray-600 text-center">Actions</th>
             </tr>
         </thead>
-        <tbody>
-        {% for cmd_intern in cmd_interns %}
-            <tr>
-                <td>{{ cmd_intern.idCmdInt }}</td>
-                <td>{{ cmd_intern.dateCI ? cmd_intern.dateCI|date('Y-m-d') : '' }}</td>
-                <td>{{ cmd_intern.statut }}</td>
-                <td>
-                    <a href="{{ path('app_cmd_intern_show', {'idCmdInt': cmd_intern.idCmdInt}) }}">show</a>
-                    <a href="{{ path('app_cmd_intern_edit', {'idCmdInt': cmd_intern.idCmdInt}) }}">edit</a>
-                </td>
-            </tr>
-        {% else %}
-            <tr>
-                <td colspan="4">no records found</td>
-            </tr>
-        {% endfor %}
+        <tbody class="divide-y divide-gray-100">
+            {% for cmd in commandes %}
+                {% set badge = {
+                    'Pending':   'bg-yellow-100 text-yellow-700',
+                    'Approved':  'bg-blue-100 text-blue-700',
+                    'Delivered': 'bg-indigo-100 text-indigo-700',
+                    'Received':  'bg-green-100 text-green-700',
+                    'Rejected':  'bg-red-100 text-red-700',
+                } %}
+                <tr class="order-row hover:bg-gray-50 transition-colors"
+                    data-status="{{ cmd.statut }}"
+                    data-requester="{{ cmd.fonctionnaire ? (cmd.fonctionnaire.nom ~ ' ' ~ cmd.fonctionnaire.prenom)|lower : '' }}">
+                    <td class="py-4 px-6 font-mono text-gray-500 text-sm">#{{ cmd.numero }}</td>
+                    <td class="py-4 px-6 text-gray-700">{{ cmd.dateCI ? cmd.dateCI|date('d/m/Y') : '-' }}</td>
+                    <td class="py-4 px-6 font-semibold text-gray-800">
+                        {% if cmd.fonctionnaire %}
+                            {{ cmd.fonctionnaire.prenom }} {{ cmd.fonctionnaire.nom }}
+                        {% else %}
+                            <span class="text-gray-400">—</span>
+                        {% endif %}
+                    </td>
+                    <td class="py-4 px-6 text-sm text-gray-600">
+                        {% set lignes = cmd.lignesCmdInterns %}
+                        {% if lignes|length > 0 %}
+                            {% for ligne in lignes|slice(0,2) %}
+                                <span class="inline-block bg-blue-50 text-blue-700 px-2 py-0.5 rounded text-xs mb-1">
+                                    {{ ligne.produit.designation }} × {{ ligne.quantite }}
+                                </span>
+                            {% endfor %}
+                            {% if lignes|length > 2 %}
+                                <span class="inline-block bg-gray-100 text-gray-600 px-2 py-0.5 rounded text-xs font-semibold">
+                                    +{{ lignes|length - 2 }} more
+                                </span>
+                            {% endif %}
+                        {% else %}
+                            <span class="text-gray-400 text-xs">—</span>
+                        {% endif %}
+                    </td>
+                    <td class="py-4 px-6">
+                        <span class="px-3 py-1 rounded-full text-xs font-bold {{ badge[cmd.statut] ?? 'bg-gray-100 text-gray-600' }}">
+                            {{ cmd.statut }}
+                        </span>
+                    </td>
+                    <td class="py-4 px-6 text-center relative group cursor-pointer">
+                        <span class="text-gray-400 hover:text-gray-800 text-xl">•••</span>
+                        <div class="absolute right-8 top-8 w-36 bg-white border rounded-lg shadow-xl hidden group-hover:block z-10 text-left overflow-hidden">
+                            <a href="{{ path('app_cmd_intern_show', {id: cmd.idCmdInt}) }}"
+                               class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">
+                                👁️ View Details
+                            </a>
+                            <form method="post" action="{{ path('app_cmd_intern_delete', {id: cmd.idCmdInt}) }}"
+                                  onsubmit="return confirm('Delete this order?');">
+                                <input type="hidden" name="_token" value="{{ csrf_token('delete' ~ cmd.idCmdInt) }}">
+                                <button type="submit"
+                                        class="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 font-semibold">
+                                    🗑️ Delete
+                                </button>
+                            </form>
+                        </div>
+                    </td>
+                </tr>
+            {% else %}
+                <tr>
+                    <td colspan="6" class="py-12 text-center text-gray-400">
+                        No internal orders yet.
+                        <a href="{{ path('app_cmd_intern_new') }}" class="text-blue-600 hover:underline ml-1">Create one?</a>
+                    </td>
+                </tr>
+            {% endfor %}
         </tbody>
     </table>
+</div>
+</main>
+</div>
+{% endblock %}
 
-    <a href="{{ path('app_cmd_intern_new') }}">Create new</a>
+{% block javascripts %}
+<script>
+const statusFilter = document.getElementById('status-filter');
+const searchInput  = document.getElementById('search-input');
+
+function applyFilters() {
+    const status = statusFilter.value;
+    const search = searchInput.value.toLowerCase();
+    document.querySelectorAll('.order-row').forEach(row => {
+        const matchStatus    = status === 'all' || row.dataset.status === status;
+        const matchRequester = row.dataset.requester.includes(search);
+        row.style.display = (matchStatus && matchRequester) ? '' : 'none';
+    });
+}
+
+statusFilter.addEventListener('change', applyFilters);
+searchInput.addEventListener('input', applyFilters);
+</script>
 {% endblock %}

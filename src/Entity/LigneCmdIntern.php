@@ -15,7 +15,7 @@ class LigneCmdIntern {
     #[ORM\Column]
     private ?int $quantite = null;
 
-    #[ORM\ManyToOne]
+    #[ORM\ManyToOne(inversedBy: 'lignesCmdInterns')]
     #[ORM\JoinColumn(name: 'idCi', referencedColumnName: 'id_cmd_int')]
     private ?CmdIntern $cmdInt = null;
 

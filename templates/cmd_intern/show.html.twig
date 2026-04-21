@@ -1,30 +1,262 @@
 {% extends 'base.html.twig' %}
 
-{% block title %}CmdIntern{% endblock %}
+{% block title %}Internal Order #{{ commande.numero }}{% endblock %}
 
 {% block body %}
-    <h1>CmdIntern</h1>
+<div class="max-w-4xl mx-auto px-4 py-8">
 
-    <table class="table">
-        <tbody>
-            <tr>
-                <th>IdCmdInt</th>
-                <td>{{ cmd_intern.idCmdInt }}</td>
-            </tr>
-            <tr>
-                <th>DateCI</th>
-                <td>{{ cmd_intern.dateCI ? cmd_intern.dateCI|date('Y-m-d') : '' }}</td>
-            </tr>
-            <tr>
-                <th>Statut</th>
-                <td>{{ cmd_intern.statut }}</td>
-            </tr>
-        </tbody>
-    </table>
+    <div class="flex justify-between items-center mb-6">
+        <h1 class="text-2xl font-bold">Internal Order #{{ commande.numero }}</h1>
+        <a href="{{ path('app_cmd_intern_index') }}" class="text-blue-600 hover:underline text-sm">← Back to list</a>
+    </div>
 
-    <a href="{{ path('app_cmd_intern_index') }}">back to list</a>
+    {# ── Order Information ── #}
+    <div class="bg-white rounded-xl shadow p-6 mb-6">
+        <div class="grid grid-cols-3 gap-4">
+            <div>
+                <p class="text-xs text-gray-400">Date</p>
+                <p class="font-semibold">{{ commande.dateCI ? commande.dateCI|date('d/m/Y') : '—' }}</p>
+            </div>
+            <div>
+                <p class="text-xs text-gray-400">Requester</p>
+                <p class="font-semibold">
+                    {{ commande.fonctionnaire ? commande.fonctionnaire.prenom ~ ' ' ~ commande.fonctionnaire.nom : '—' }}
+                </p>
+                {% if commande.fonctionnaire %}
+                    <p class="text-sm text-gray-500">{{ commande.fonctionnaire.email }}</p>
+                    <p class="text-sm text-gray-500">
+                        {{ commande.fonctionnaire.organigramme ? commande.fonctionnaire.organigramme.departement : 'No department' }}
+                    </p>
+                    {% if commande.fonctionnaire.responsable %}
+                        <span class="inline-block mt-1 px-2 py-0.5 bg-yellow-100 text-yellow-700 text-xs rounded-full">⭐ Department Head</span>
+                    {% endif %}
+                {% endif %}
+            </div>
+            <div>
+                <p class="text-xs text-gray-400">Status</p>
+                {% set badgeClass = 'bg-gray-100 text-gray-600' %}
+                {% if commande.statut == 'Pending' %}{% set badgeClass = 'bg-yellow-100 text-yellow-700' %}
+                {% elseif commande.statut == 'Approved' %}{% set badgeClass = 'bg-blue-100 text-blue-700' %}
+                {% elseif commande.statut == 'Delivered' %}{% set badgeClass = 'bg-indigo-100 text-indigo-700' %}
+                {% elseif commande.statut == 'Received' %}{% set badgeClass = 'bg-green-100 text-green-700' %}
+                {% elseif commande.statut == 'Rejected' %}{% set badgeClass = 'bg-red-100 text-red-700' %}
+                {% endif %}
+                <span class="px-3 py-1 rounded-full text-xs font-bold uppercase {{ badgeClass }}">
+                    {{ commande.statut }}
+                </span>
+            </div>
+        </div>
+    </div>
 
-    <a href="{{ path('app_cmd_intern_edit', {'idCmdInt': cmd_intern.idCmdInt}) }}">edit</a>
+    {# ── Approval Progress ── #}
+    <div class="bg-white rounded-xl shadow p-6 mb-6">
+        <h2 class="font-bold text-lg mb-4">Approval Progress</h2>
+        {% for step in commande.approvalSteps %}
+            <div class="flex items-center gap-3 py-3 border-b last:border-0">
+                <span class="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0
+                    {% if step.status == 'approved' %}bg-green-100 text-green-700
+                    {% elseif step.status == 'rejected' %}bg-red-100 text-red-700
+                    {% else %}bg-gray-100 text-gray-500{% endif %}">
+                    {{ step.stepOrder }}
+                </span>
+                <div class="flex-1">
+                    <p class="font-semibold text-gray-800">{{ step.approver.prenom }} {{ step.approver.nom }}</p>
+                    <p class="text-xs text-gray-500">{{ step.approver.organigramme ? step.approver.organigramme.departement : '' }}</p>
+                </div>
+                <div class="text-right">
+                    <span class="px-3 py-1 rounded-full text-xs font-bold
+                        {% if step.status == 'approved' %}bg-green-100 text-green-700
+                        {% elseif step.status == 'rejected' %}bg-red-100 text-red-700
+                        {% else %}bg-yellow-100 text-yellow-700{% endif %}">
+                        {{ step.status|capitalize }}
+                    </span>
+                    {% if step.approvedAt %}
+                        <p class="text-xs text-gray-400 mt-1">{{ step.approvedAt|date('d/m/Y H:i') }}</p>
+                    {% endif %}
+                </div>
+            </div>
+        {% else %}
+            <p class="text-gray-400 text-sm">No approval steps defined.</p>
+        {% endfor %}
 
-    {{ include('cmd_intern/_delete_form.html.twig') }}
+        {# ── Current user approval action ── #}
+        {% set pendingStep = null %}
+        {% for step in commande.approvalSteps %}
+            {% if step.status == 'pending' and not pendingStep %}
+                {% set pendingStep = step %}
+            {% endif %}
+        {% endfor %}
+
+        {% if pendingStep and app.user and pendingStep.approver.idFonct == app.user.idFonct %}
+        <div class="mt-4 p-4 bg-blue-50 rounded-lg border border-blue-100">
+            <p class="font-semibold text-blue-800 mb-3">⏳ This order is waiting for your approval.</p>
+            <form method="post" action="{{ path('app_cmd_intern_approve', {id: commande.idCmdInt, stepId: pendingStep.id}) }}"
+                  class="flex gap-3 flex-wrap items-center">
+                <button name="action" value="approve"
+                    class="bg-green-600 text-white px-5 py-2 rounded-lg hover:bg-green-700 font-semibold text-sm">
+                    ✅ Approve
+                </button>
+                <input type="text" name="comments" placeholder="Reason (optional)"
+                       class="border rounded-lg px-3 py-2 flex-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400">
+                <button name="action" value="reject"
+                    class="bg-red-600 text-white px-5 py-2 rounded-lg hover:bg-red-700 font-semibold text-sm">
+                    ✗ Reject
+                </button>
+            </form>
+        </div>
+        {% endif %}
+    </div>
+
+    {# ── Products Requested ── #}
+    <div class="bg-white rounded-xl shadow p-6 mb-6">
+        <h2 class="font-bold text-lg mb-4">Products Requested</h2>
+        <table class="w-full text-sm">
+            <thead>
+                <tr class="border-b text-left text-gray-400">
+                    <th class="pb-2">Product</th>
+                    <th class="pb-2">Quantity Requested</th>
+                    <th class="pb-2">Current Stock</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for ligne in lignes %}
+                <tr class="border-b">
+                    <td class="py-3 font-semibold text-gray-800">{{ ligne.produit.designation }}</td>
+                    <td class="py-3">
+                        {% if commande.statut == 'Pending' %}
+                        <div class="flex items-center gap-2">
+                            <input type="number"
+                                   id="qty-{{ ligne.numLCI }}"
+                                   value="{{ ligne.quantite }}"
+                                   min="1"
+                                   class="w-20 border border-gray-300 rounded-lg px-2 py-1 text-sm
+                                          focus:outline-none focus:ring-2 focus:ring-blue-400">
+                            <button onclick="updateQuantity({{ ligne.numLCI }}, {{ commande.idCmdInt }})"
+                                    class="text-xs bg-blue-50 text-blue-600 hover:bg-blue-100 px-2 py-1 rounded font-semibold">
+                                Save
+                            </button>
+                        </div>
+                        {% else %}
+                            {{ ligne.quantite }}
+                        {% endif %}
+                    </td>
+                    <td class="py-3">
+                        <span class="{{ ligne.produit.qteStock <= 0 ? 'text-red-500 font-bold' : 'text-green-600 font-bold' }}">
+                            {{ ligne.produit.qteStock }}
+                        </span>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="3" class="text-gray-400 py-4 text-center">No lines found.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    {# ── Warehouse: Approved → Delivered ── #}
+    {% if is_granted('ROLE_WAREHOUSE') and commande.statut == 'Approved' %}
+    <div class="bg-white rounded-xl shadow p-6 mb-6">
+        <h2 class="font-bold mb-2">Warehouse Actions</h2>
+        <p class="text-sm text-gray-500 mb-4">Items have been picked and are ready for delivery.</p>
+        <button onclick="updateStatus('Delivered')"
+            class="bg-blue-600 text-white px-5 py-2 rounded-lg text-sm hover:bg-blue-700 font-semibold">
+            → Mark as Delivered
+        </button>
+    </div>
+    {% endif %}
+
+    {# ── Requester: Delivered → Received ── #}
+    {% if commande.statut == 'Delivered'
+        and app.user
+        and commande.fonctionnaire
+        and app.user.idFonct == commande.fonctionnaire.idFonct
+        and not commande.receivedAt %}
+    <div class="bg-green-50 border border-green-200 rounded-xl p-6 mb-6">
+        <h2 class="font-bold mb-2 text-green-700">📦 Confirm Receipt</h2>
+        <p class="text-sm text-gray-600 mb-4">
+            The warehouse has marked this order as delivered. Please confirm you have received all items.
+        </p>
+        <form method="post" action="{{ path('app_cmd_intern_receive', {id: commande.idCmdInt}) }}">
+            <button type="submit"
+                class="bg-green-600 text-white px-6 py-2 rounded-lg text-sm hover:bg-green-700 font-semibold">
+                ✅ I confirm I received this order
+            </button>
+        </form>
+    </div>
+    {% endif %}
+
+    {# ── Received confirmation info ── #}
+    {% if commande.statut == 'Received' and commande.receivedAt %}
+    <div class="bg-green-50 border border-green-200 rounded-xl p-6 mb-6 flex justify-between items-center">
+        <div>
+            <p class="font-semibold text-green-700">✅ Receipt confirmed</p>
+            <p class="text-sm text-gray-500 mt-1">
+                By {{ commande.receivedBy ? commande.receivedBy.prenom ~ ' ' ~ commande.receivedBy.nom : '—' }}
+                on {{ commande.receivedAt|date('d/m/Y H:i') }}
+            </p>
+        </div>
+        <a href="{{ path('app_cmd_intern_bon', {id: commande.idCmdInt}) }}"
+           class="bg-blue-600 text-white px-5 py-2 rounded-lg text-sm hover:bg-blue-700 font-semibold">
+            📄 Download Bon (PDF)
+        </a>
+    </div>
+    {% endif %}
+
+    {# ── Reject button (warehouse or final approver, before delivery) ── #}
+    {% if (is_granted('ROLE_WAREHOUSE') or is_granted('ROLE_FINAL_APPROVER'))
+        and commande.statut not in ['Delivered', 'Received', 'Rejected'] %}
+    <div class="bg-white rounded-xl shadow p-6">
+        <button onclick="updateStatus('Rejected')"
+            class="bg-red-100 text-red-700 px-4 py-2 rounded-lg text-sm hover:bg-red-200 font-semibold">
+            ✗ Reject Order
+        </button>
+    </div>
+    {% endif %}
+
+    {# ── Rejected state ── #}
+    {% if commande.statut == 'Rejected' %}
+    <div class="bg-red-50 border border-red-200 rounded-xl p-6">
+        <p class="font-semibold text-red-700">✗ This order has been rejected.</p>
+    </div>
+    {% endif %}
+
+</div>
+
+<script>
+function updateStatus(statut) {
+    fetch(`/commande/interne/{{ commande.idCmdInt }}/status`, {
+        method: 'POST',
+        headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+        body: 'statut=' + encodeURIComponent(statut)
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.success) location.reload();
+        else alert('Error: ' + (data.error || 'Unknown error'));
+    });
+}
+
+function updateQuantity(ligneId, cmdId) {
+    const qty = document.getElementById('qty-' + ligneId).value;
+    fetch(`/commande/interne/${cmdId}/ligne/${ligneId}/quantite`, {
+        method: 'POST',
+        headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+        body: 'quantite=' + encodeURIComponent(qty)
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.success) {
+            const btn = document.getElementById('qty-' + ligneId)
+                ?.closest('.flex')
+                ?.querySelector('button');
+            if (btn) {
+                btn.textContent = '✓ Saved';
+                setTimeout(() => btn.textContent = 'Save', 1500);
+            }
+        }
+    });
+}
+</script>
 {% endblock %}

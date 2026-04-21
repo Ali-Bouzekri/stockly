@@ -16,29 +16,15 @@ class CmdInternRepository extends ServiceEntityRepository
     {
         parent::__construct($registry, CmdIntern::class);
     }
+    public function findMaxNumero(): int
+{
+    $result = $this->createQueryBuilder('c')
+        ->select('MAX(c.numero)')
+        ->getQuery()
+        ->getSingleScalarResult();
 
-//    /**
-//     * @return CmdIntern[] Returns an array of CmdIntern objects
-//     */
-//    public function findByExampleField($value): array
-//    {
-//        return $this->createQueryBuilder('c')
-//            ->andWhere('c.exampleField = :val')
-//            ->setParameter('val', $value)
-//            ->orderBy('c.id', 'ASC')
-//            ->setMaxResults(10)
-//            ->getQuery()
-//            ->getResult()
-//        ;
-//    }
+    return (int) $result;
+}
 
-//    public function findOneBySomeField($value): ?CmdInt
-//    {
-//        return $this->createQueryBuilder('c')
-//            ->andWhere('c.exampleField = :val')
-//            ->setParameter('val', $value)
-//            ->getQuery()
-//            ->getOneOrNullResult()
-//        ;
-//    }
+
 }

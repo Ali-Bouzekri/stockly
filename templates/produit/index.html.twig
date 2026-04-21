@@ -1,41 +1,909 @@
 {% extends 'base.html.twig' %}
 
-{% block title %}Produit index{% endblock %}
+{% block title %}Products Inventory - Bouzekri Solutions{% endblock %}
 
 {% block body %}
-    <h1>Produit index</h1>
 
-    <table class="table">
-        <thead>
-            <tr>
-                <th>IdProduit</th>
-                <th>Designation</th>
-                <th>Description</th>
-                <th>QteStock</th>
-                <th>SeuilAlert</th>
-                <th>actions</th>
-            </tr>
-        </thead>
-        <tbody>
-        {% for produit in produits %}
-            <tr>
-                <td>{{ produit.idProduit }}</td>
-                <td>{{ produit.designation }}</td>
-                <td>{{ produit.description }}</td>
-                <td>{{ produit.qteStock }}</td>
-                <td>{{ produit.seuilAlert }}</td>
-                <td>
-                    <a href="{{ path('app_produit_show', {'idProduit': produit.idProduit}) }}">show</a>
-                    <a href="{{ path('app_produit_edit', {'idProduit': produit.idProduit}) }}">edit</a>
-                </td>
-            </tr>
-        {% else %}
-            <tr>
-                <td colspan="6">no records found</td>
-            </tr>
+<div class="flex h-screen bg-gray-100">
+    
+
+    <main class="flex-1 overflow-hidden">
+    <div class="sticky top-0 z-30 bg-gray-100 px-8 pt-8 pb-4">
+
+<header class="flex justify-end items-center mb-8">
+    <div class="flex gap-6 items-center">
+        <span class="text-xl cursor-pointer">🔔</span>
+        <div class="w-10 h-10 bg-gray-300 rounded-full flex items-center justify-center text-white font-bold cursor-pointer">👤</div>
+    </div>
+</header>
+
+<div class="flex justify-between items-end mb-8">
+    <div>
+        <h1 class="text-2xl font-bold text-gray-800">Products Inventory</h1>
+        <p class="text-gray-500 mt-1">Manage your products catalog and stock levels</p>
+    </div>
+
+    <button onclick="toggleModal()" 
+   class="bg-blue-600 text-white px-6 py-2.5 rounded-lg font-bold shadow hover:bg-blue-700 transition-colors flex items-center gap-2">
+   <span>+</span> Add New Product
+</button>
+</div>
+
+<div class="bg-white border rounded-xl p-4 flex gap-4 items-center shadow-sm">
+
+        
+            <div class="relative flex-1">
+                <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-gray-400">🔍</span>
+                <input type="text" id="product-search" placeholder="Search products..." class="border py-2 pr-3 pl-10 rounded w-full bg-gray-50 focus:outline-none focus:ring-1 focus:ring-blue-500">               </div>
+            
+            <div class="flex gap-3 items-center">
+    <select id="cat-filter" class="border rounded-lg py-2 px-4 text-gray-600 bg-gray-50 focus:outline-none cursor-pointer">
+        <option value="all">Category: All</option>
+        {% for cat in categories %}
+            {# Note: Check if it is nomCategory or nomCategorie in your Entity #}
+            <option value="{{ cat.nomCategory|trim|lower }}">
+    {{ cat.nomCategory }}
+</option>
         {% endfor %}
-        </tbody>
-    </table>
+    </select>
 
-    <a href="{{ path('app_produit_new') }}">Create new</a>
+    <select id="sub-cat-filter" class="border rounded-lg py-2 px-4 text-gray-600 bg-gray-50">
+
+<option value="all" data-parent="all">Subcategory: All</option>
+
+{% for sub in sous_categories %}
+<option
+value="{{ sub.nomSousCat|trim|lower }}"
+data-parent="{{ sub.categorie.nomCategory|trim|lower }}"
+class="sub-option">
+
+{{ sub.nomSousCat }}
+
+</option>
+{% endfor %}
+
+</select>
+    <select id="status-filter" class="border rounded-lg py-2 px-4 text-gray-600 bg-gray-50 focus:outline-none cursor-pointer">
+        <option value="all">Status: All</option>
+        <option value="in_stock">In Stock</option>
+        <option value="low_stock">Low Stock</option>
+        <option value="out_of_stock">Out of Stock</option>
+    </select>
+
+    <button onclick="exportToPDF()"
+        class="border border-gray-300 rounded-lg py-2 px-4 text-gray-700 hover:bg-gray-50 flex items-center gap-2 font-medium transition-colors">
+    📥 Export PDF
+</button>
+</div>
+        </div>
+</div>
+        <div class="bg-white border rounded-xl shadow-sm overflow-auto max-h-[70vh]">
+            <table class="w-full text-left border-collapse">
+                <thead class="sticky top-0 z-20">
+                    <tr class="bg-gray-50 border-b">
+                        <th class="py-4 px-6 font-semibold text-gray-600">Product Name</th>
+                        <th class="py-4 px-6 font-semibold text-gray-600">Category</th>
+                        <th class="py-4 px-6 font-semibold text-gray-600">Stock Level</th>
+                        <th class="py-4 px-6 font-semibold text-gray-600">Unit</th>
+                        <th class="py-4 px-6 font-semibold text-gray-600">Status</th>
+                        <th class="py-4 px-6 font-semibold text-gray-600 text-center">Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-100">
+                    {% for produit in produits %}
+                        
+                        {# --- EXACT STATUS LOGIC --- #}
+                        {% set stockStatus = 'In Stock' %}
+                        {% set badgeClass = 'bg-green-100 text-green-700' %}
+                        {% set barClass = 'bg-green-500' %}
+                        
+                        {% if produit.qteStock == 0 %}
+                            {% set stockStatus = 'Out of Stock' %}
+                            {% set badgeClass = 'bg-red-100 text-red-700' %}
+                            {% set barClass = 'bg-red-500' %}
+                        {% elseif produit.qteStock <= produit.seuilAlert %}
+                            {% set stockStatus = 'Low Stock' %}
+                            {% set badgeClass = 'bg-orange-100 text-orange-700' %}
+                            {% set barClass = 'bg-orange-500' %}
+                        {% endif %}
+
+                        {# Progress bar math (max capped at 100 for visual) #}
+                        {% set percent = min((produit.qteStock / 100) * 100, 100) %}
+
+                        <tr class="product-item" data-id="{{ produit.idProduit }}"
+
+                            data-category="{{ produit.sousCategorie and produit.sousCategorie.categorie 
+                            ? produit.sousCategorie.categorie.nomCategory|trim|lower : '' }}"
+
+                            data-subcategory="{{ produit.sousCategorie 
+                            ? produit.sousCategorie.nomSousCat|trim|lower : '' }}"
+
+                            data-status="{{ stockStatus|lower|replace({' ':'_'}) }}">
+
+                            <td class="py-4 px-6 font-bold text-gray-800">{{ produit.designation }}</td>
+                            
+                            <td class="py-4 px-6 text-gray-600">
+                                {{ produit.sousCategorie ? produit.sousCategorie.nomSousCat : '-' }}
+                            </td>
+                            
+                            <td class="py-4 px-6">
+                                <div class="flex flex-col gap-1 w-32">
+                                    <div class="flex justify-between text-xs font-semibold text-gray-500">
+                                        <span>{{ produit.qteStock }}</span>
+                                        <span>{{ percent|round }}%</span>
+                                    </div>
+                                    <div class="w-full bg-gray-200 rounded-full h-1.5 border border-gray-300">
+                                        <div class="{{ barClass }} h-1.5 rounded-full" style="width: {{ percent }}%"></div>
+                                    </div>
+                                </div>
+                            </td>
+                            
+                            <td class="py-4 px-6 text-gray-500 text-sm">
+                                {{ produit.unite ? produit.unite.nomunite : '-' }}
+                            </td>
+                            
+                            <td class="py-4 px-6">
+                                <span class="px-3 py-1 rounded-full text-xs font-bold {{ badgeClass }}">
+                                    {{ stockStatus }}
+                                </span>
+                            </td>
+                            
+                            <td class="py-4 px-6 text-center relative group cursor-pointer">
+                                <span class="text-gray-400 hover:text-gray-800 text-xl">•••</span>
+                                
+                                <div class="absolute right-8 top-8 w-32 bg-white border rounded-lg shadow-xl hidden group-hover:block z-10 text-left overflow-hidden">
+                                    <a href="#"
+                                        onclick="openEditModal(this)"
+                                        data-id="{{ produit.idProduit }}"
+                                        data-designation="{{ produit.designation }}"
+                                        data-stock="{{ produit.qteStock }}"
+                                        data-seuil="{{ produit.seuilAlert }}"
+                                        data-description="{{ produit.description }}"
+                                        data-cat-id="{{ produit.sousCategorie ? produit.sousCategorie.categorie.idCategory : '' }}"
+                                        data-sub-id="{{ produit.sousCategorie ? produit.sousCategorie.idSousCat : '' }}"
+                                        data-sub-name="{{ produit.sousCategorie ? produit.sousCategorie.nomSousCat : '' }}"
+                                        data-unite-id="{{ produit.unite ? produit.unite.idUnite : '' }}">
+                                        ✏️ Edit
+                                    </a>
+                                    
+                                  
+                                    <form method="post"
+      action="{{ path('app_produit_delete', {'idProduit': produit.idProduit}) }}"
+      onsubmit="return confirm('Delete this product?');">
+
+<input type="hidden" name="_token" value="{{ csrf_token('delete' ~ produit.idProduit) }}">
+
+<button type="button"
+        onclick="deleteProduct({{ produit.idProduit }}, '{{ csrf_token('delete' ~ produit.idProduit) }}')"
+        class="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 font-semibold">
+    🗑️ Delete
+</button>
+
+</form>
+                                </div>
+                            </td>
+                        </tr>
+                    {% else %}
+                        <tr data-id="{{ produit.idProduit }}">
+                            <td colspan="6" class="py-8 text-center text-gray-500">
+                                No products found. <a href="{{ path('app_produit_new') }}" class="text-blue-600 hover:underline">Create one?</a>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </main>
+</div>
+{# ===== ADD PRODUCT MODAL (inline form, no iframe) ===== #}
+<div id="productModal" class="fixed inset-0 z-50 flex items-center justify-center hidden">
+    <div class="absolute inset-0 bg-gray-900 bg-opacity-50 backdrop-blur-sm" onclick="toggleModal()"></div>
+
+    <div class="bg-white rounded-2xl shadow-2xl z-10 w-full max-w-2xl overflow-hidden">
+
+        {# Modal Header #}
+        <div class="px-8 py-5 border-b flex justify-between items-center">
+            <div>
+                <h3 class="text-xl font-bold text-gray-800">Add New Product</h3>
+                <p class="text-gray-500 text-sm mt-0.5">Fill in the details below to add a product</p>
+            </div>
+            <button onclick="toggleModal()" class="text-gray-400 hover:text-gray-600 text-2xl leading-none">&times;</button>
+        </div>
+
+        {# Success / Error banner (hidden by default) #}
+        <div id="modal-alert" class="hidden mx-8 mt-4 px-4 py-3 rounded-lg text-sm font-semibold"></div>
+
+        {# Modal Form #}
+        <form id="addProductForm" class="px-8 py-6 space-y-5">
+
+            {# Row 1: Product Name #}
+            <div>
+                <label class="block text-sm font-semibold text-gray-700 mb-1">
+                    Product Name <span class="text-red-500">*</span>
+                </label>
+                <input type="text" name="designation" id="add-designation" 
+                    class="w-full border border-gray-300 rounded-lg px-4 py-2.5 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500">
+    <p class="text-xs text-gray-400 mt-1">The product name cannot be modified once created.</p>
+            </div>
+
+            {# Row 2: Category → SubCategory → Unit (3 columns) #}
+            <div class="grid grid-cols-3 gap-4">
+
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-1">
+                        Category <span class="text-red-500">*</span>
+                    </label>
+                    <select id="modal-category" name="categorie"
+                            class="w-full border border-gray-300 rounded-lg px-4 py-2.5 bg-white
+                                   focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer">
+                        <option value="">— Select —</option>
+                        {% for cat in categories %}
+                            <option value="{{ cat.idCategory }}">{{ cat.nomCategory }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-1">
+                        Subcategory <span class="text-red-500">*</span>
+                    </label>
+                    <select id="modal-subcategory" name="sousCategorie"
+                            class="w-full border border-gray-300 rounded-lg px-4 py-2.5 bg-white
+                                   focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
+                            disabled>
+                        <option value="">— Pick category first —</option>
+                        {# Populated dynamically via JS #}
+                        {% for sub in sous_categories %}
+                            <option value="{{ sub.idSousCat }}"
+                                    data-parent="{{ sub.categorie.idCategory }}">
+                                {{ sub.nomSousCat }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-1">
+                        Unit <span class="text-red-500">*</span>
+                    </label>
+                    <select name="unite"
+                            class="w-full border border-gray-300 rounded-lg px-4 py-2.5 bg-white
+                                   focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer">
+                        <option value="">— Select —</option>
+                        {% for unit in units %}
+                            <option value="{{ unit.idUnite }}">{{ unit.nomunite }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+            </div>
+
+            {# Row 3: Stock Qty + Alert Threshold #}
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-1">Initial Stock</label>
+                    <input type="number" name="qteStock" value="0" min="0"
+                           class="w-full border border-gray-300 rounded-lg px-4 py-2.5 bg-gray-50
+                                  focus:outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-1">Alert Threshold</label>
+                    <input type="number" name="seuilAlert" value="0" min="0"
+                           class="w-full border border-gray-300 rounded-lg px-4 py-2.5 bg-gray-50
+                                  focus:outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+            </div>
+
+            {# Row 4: Description (optional) #}
+            <div>
+                <label class="block text-sm font-semibold text-gray-700 mb-1">Description
+                    <span class="text-gray-400 font-normal">(optional)</span>
+                </label>
+                <textarea name="description" rows="2" placeholder="Short description…"
+                          class="w-full border border-gray-300 rounded-lg px-4 py-2.5 bg-gray-50
+                                 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"></textarea>
+            </div>
+
+            {# Footer buttons #}
+            <div class="flex justify-end gap-3 pt-2 border-t">
+                <button type="button" onclick="toggleModal()"
+                        class="px-6 py-2.5 border rounded-lg text-gray-600 hover:bg-gray-50
+                               font-semibold transition-colors">
+                    Cancel
+                </button>
+                <button type="submit" id="submitBtn"
+                        class="px-6 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700
+                               font-semibold shadow transition-colors flex items-center gap-2">
+                    <span id="submitBtnText">Save Product</span>
+                    <svg id="submitSpinner" class="hidden animate-spin h-4 w-4 text-white"
+                         xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10"
+                                stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor"
+                              d="M4 12a8 8 0 018-8v8z"></path>
+                    </svg>
+                </button>
+            </div>
+
+        </form>
+    </div>
+    
+</div>
+{# ===== EDIT PRODUCT MODAL ===== #}
+<div id="editProductModal" class="fixed inset-0 z-50 flex items-center justify-center hidden">
+    <div class="absolute inset-0 bg-gray-900 bg-opacity-50 backdrop-blur-sm" onclick="toggleEditModal(false)"></div>
+
+    <div class="bg-white rounded-2xl shadow-2xl z-10 w-full max-w-2xl overflow-hidden">
+
+        {# Modal Header #}
+        <div class="px-8 py-5 border-b flex justify-between items-center">
+            <div>
+                <h3 class="text-xl font-bold text-gray-800">Edit Product</h3>
+                <p class="text-gray-500 text-sm mt-0.5">Update product details below</p>
+            </div>
+            <button onclick="toggleEditModal(false)" class="text-gray-400 hover:text-gray-600 text-2xl leading-none">&times;</button>
+        </div>
+
+        <div id="edit-modal-alert" class="hidden mx-8 mt-4 px-4 py-3 rounded-lg text-sm font-semibold"></div>
+
+        <form id="editProductForm" class="px-8 py-6 space-y-5">
+
+            <input type="hidden" name="idProduit" id="edit-idProduit">
+
+            <div>
+                <label class="block text-sm font-semibold text-gray-700 mb-1">
+                    Product Name <span class="text-red-500">*</span>
+                </label>
+                <input type="text" name="designation" id="edit-designation"
+                        placeholder="Enter new product name…"
+                        class="w-full border border-gray-300 rounded-lg px-4 py-2.5 bg-white
+                        focus:outline-none focus:ring-2 focus:ring-blue-500">
+            </div>
+
+            <div class="grid grid-cols-3 gap-4">
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-1">Category</label>
+                    <select id="edit-category" name="categorie"
+                            class="w-full border border-gray-300 rounded-lg px-4 py-2.5 bg-white
+                                   focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer">
+                        <option value="">— Select —</option>
+                        {% for cat in categories %}
+                            <option value="{{ cat.idCategory }}">{{ cat.nomCategory }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-1">Subcategory</label>
+                    <select id="edit-subcategory" name="sousCategorie"
+                            class="w-full border border-gray-300 rounded-lg px-4 py-2.5 bg-white
+                                   focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer" disabled>
+                        <option value="">— Pick category first —</option>
+                        {% for sub in sous_categories %}
+                            <option value="{{ sub.idSousCat }}" data-parent="{{ sub.categorie.idCategory }}">
+                                {{ sub.nomSousCat }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-1">Unit</label>
+                    <select name="unite" id="edit-unite"
+                            class="w-full border border-gray-300 rounded-lg px-4 py-2.5 bg-white
+                                   focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer">
+                        <option value="">— Select —</option>
+                        {% for unit in units %}
+                            <option value="{{ unit.idUnite }}">{{ unit.nomunite }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-1">Stock Qty</label>
+                    <input type="number" name="qteStock" id="edit-qteStock" min="0"
+                           class="w-full border border-gray-300 rounded-lg px-4 py-2.5 bg-gray-50
+                                  focus:outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-1">Alert Threshold</label>
+                    <input type="number" name="seuilAlert" id="edit-seuilAlert" min="0"
+                           class="w-full border border-gray-300 rounded-lg px-4 py-2.5 bg-gray-50
+                                  focus:outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+            </div>
+
+            <div>
+                <label class="block text-sm font-semibold text-gray-700 mb-1">Description</label>
+                <textarea name="description" id="edit-description" rows="2"
+                          class="w-full border border-gray-300 rounded-lg px-4 py-2.5 bg-gray-50
+                                 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"></textarea>
+            </div>
+
+            <div class="flex justify-end gap-3 pt-2 border-t">
+                <button type="button" onclick="toggleEditModal(false)"
+                        class="px-6 py-2.5 border rounded-lg text-gray-600 hover:bg-gray-50
+                               font-semibold transition-colors">
+                    Cancel
+                </button>
+                <button type="submit" id="editSubmitBtn"
+                        class="px-6 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700
+                               font-semibold shadow transition-colors flex items-center gap-2">
+                    <span>Update Product</span>
+                    <svg class="hidden animate-spin h-4 w-4 text-white" id="editSubmitSpinner"
+                         xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10"
+                                stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor"
+                              d="M4 12a8 8 0 018-8v8z"></path>
+                    </svg>
+                </button>
+            </div>
+
+        </form>
+    </div>
+</div>
 {% endblock %}
+{% block javascripts %}
+<script>
+// ─── Table filters (unchanged) ──────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', () => {
+    const catFilter    = document.getElementById('cat-filter');
+    const subFilter    = document.getElementById('sub-cat-filter');
+    const statusFilter = document.getElementById('status-filter');
+    const searchInput  = document.getElementById('product-search');
+
+    const rows = [...document.querySelectorAll('.product-item')].map(row => ({
+        el:     row,
+        cat:    (row.dataset.category    || '').trim().toLowerCase(),
+        sub:    (row.dataset.subcategory || '').trim().toLowerCase(),
+        status: (row.dataset.status      || '').toLowerCase(),
+        text:   row.textContent.toLowerCase(),
+    }));
+
+    function applyFilters() {
+        const cat    = catFilter.value.trim().toLowerCase();
+        const sub    = subFilter.value.trim().toLowerCase();
+        const status = statusFilter.value.toLowerCase();
+        const search = searchInput.value.toLowerCase();
+
+        rows.forEach(({ el, cat: rowCat, sub: rowSub, status: rowStatus, text }) => {
+            const match = (cat    === 'all' || rowCat    === cat)
+                       && (sub    === 'all' || rowSub    === sub)
+                       && (status === 'all' || rowStatus === status)
+                       && text.includes(search);
+
+            el.style.display = match ? '' : 'none';
+        });
+    }
+
+    catFilter.addEventListener('change', () => {
+        const category = catFilter.value.toLowerCase();
+        subFilter.value = 'all';
+        document.querySelectorAll('.sub-option').forEach(opt => {
+            const isMatch = category === 'all' || opt.dataset.parent.toLowerCase() === category;
+            opt.style.display = isMatch ? '' : 'none';
+            opt.disabled = !isMatch;
+        });
+        applyFilters();
+    });
+
+    subFilter.addEventListener('change', applyFilters);
+    statusFilter.addEventListener('change', applyFilters);
+    searchInput.addEventListener('input', applyFilters);
+
+    // ✅ NEW: Apply filter from URL query parameter
+    const urlParams = new URLSearchParams(window.location.search);
+    const statusParam = urlParams.get('status');
+    if (statusParam) {
+        if (statusParam === 'low_stock') {
+            statusFilter.value = 'low_stock';
+        } else if (statusParam === 'out_of_stock') {
+            statusFilter.value = 'out_of_stock';
+        }
+        // Manually call applyFilters to immediately filter the table
+        applyFilters();
+    }
+});
+
+// ─── Modal open / close ──────────────────────────────────────────────────────
+function toggleModal(open) {
+    const modal = document.getElementById('productModal');
+    const isHidden = modal.classList.contains('hidden');
+
+    if (open === false || !isHidden) {
+        // Close
+        modal.classList.add('hidden');
+        document.body.style.overflow = 'auto';
+        resetModalForm();
+    } else {
+        // Open
+        modal.classList.remove('hidden');
+        document.body.style.overflow = 'hidden';
+    }
+}
+
+document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') {
+        toggleModal(false);
+        toggleEditModal(false);
+    }
+});
+
+function resetModalForm() {
+    document.getElementById('addProductForm').reset();
+    document.getElementById('modal-subcategory').innerHTML =
+        '<option value="">— Pick category first —</option>';
+    document.getElementById('modal-subcategory').disabled = true;
+    hideAlert();
+}
+
+// ─── Category → Subcategory dynamic filtering ────────────────────────────────
+document.getElementById('modal-category').addEventListener('change', function () {
+    const catId  = this.value;
+    const subSel = document.getElementById('modal-subcategory');
+
+    subSel.innerHTML = '<option value="">Loading…</option>';
+    subSel.disabled  = true;
+
+    if (!catId) {
+        subSel.innerHTML = '<option value="">— Pick category first —</option>';
+        return;
+    }
+
+    // Fetch matching subcategories from our JSON endpoint
+    fetch(`/produit/api/subcategories/${catId}`)
+        .then(r => r.json())
+        .then(data => {
+            if (data.length === 0) {
+                subSel.innerHTML = '<option value="">No subcategories found</option>';
+                return;
+            }
+            subSel.innerHTML = '<option value="">— Select —</option>';
+            data.forEach(sub => {
+                const opt = document.createElement('option');
+                opt.value       = sub.id;
+                opt.textContent = sub.name;
+                subSel.appendChild(opt);
+            });
+            subSel.disabled = false;
+        })
+        .catch(() => {
+            subSel.innerHTML = '<option value="">Error loading subcategories</option>';
+        });
+});
+
+// ─── Form submission via fetch (no full page reload) ─────────────────────────
+document.getElementById('addProductForm').addEventListener('submit', async function (e) {
+    e.preventDefault();
+
+    // ── Validation ──────────────────────────────────────────
+    const designation  = document.getElementById('add-designation').value.trim();
+    const category     = document.getElementById('modal-category').value;
+    const subcategory  = document.getElementById('modal-subcategory').value;
+    const unit         = this.querySelector('select[name="unite"]').value;
+
+    if (!designation) {
+        showAlert('Product name is required.', 'error');
+        return;
+    }
+    if (!category) {
+        showAlert('Please select a category.', 'error');
+        return;
+    }
+    if (!subcategory) {
+        showAlert('Please select a subcategory.', 'error');
+        return;
+    }
+    if (!unit) {
+        showAlert('Please select a unit.', 'error');
+        return;}
+
+    const btn     = document.getElementById('submitBtn');
+    const spinner = document.getElementById('submitSpinner');
+    const btnText = document.getElementById('submitBtnText');
+
+    btn.disabled    = true;
+    spinner.classList.remove('hidden');
+    btnText.textContent = 'Saving…';
+    hideAlert();
+
+    try {
+        const res = await fetch('{{ path("app_produit_new") }}', {
+            method:  'POST',
+            headers: { 'X-Requested-With': 'XMLHttpRequest' },
+            body:    new FormData(this),
+        });
+
+        const json = await res.json();
+
+        if (json.success) {
+            showAlert('✅ Product saved successfully!', 'success');
+            this.reset();
+            document.getElementById('modal-subcategory').innerHTML =
+                '<option value="">— Pick category first —</option>';
+            document.getElementById('modal-subcategory').disabled = true;
+
+            // Reload the page after a short delay so the table updates
+            setTimeout(() => window.location.reload(), 900);
+        } else {
+            showAlert(json.error || 'Something went wrong. Please try again.', 'error');
+        }
+    } catch {
+        showAlert('Network error. Please check your connection.', 'error');
+    } finally {
+        btn.disabled        = false;
+        spinner.classList.add('hidden');
+        btnText.textContent = 'Save Product';
+    }
+});
+
+// ─── Alert helpers ───────────────────────────────────────────────────────────
+function showAlert(message, type) {
+    const el = document.getElementById('modal-alert');
+    el.textContent = message;
+    el.className = type === 'success'
+        ? 'mx-8 mt-4 px-4 py-3 rounded-lg text-sm font-semibold bg-green-100 text-green-700'
+        : 'mx-8 mt-4 px-4 py-3 rounded-lg text-sm font-semibold bg-red-100 text-red-700';
+}
+
+function hideAlert() {
+    document.getElementById('modal-alert').className = 'hidden';
+}
+function toggleEditModal(open) {
+    const modal = document.getElementById('editProductModal');
+    const isHidden = modal.classList.contains('hidden');
+
+    if (open === false || !isHidden) {
+        modal.classList.add('hidden');
+        document.body.style.overflow = 'auto';
+        document.getElementById('editProductForm').reset();
+        hideEditAlert();
+    } else {
+        modal.classList.remove('hidden');
+        document.body.style.overflow = 'hidden';
+    }
+}
+
+function openEditModal(el) {
+    const d = el.dataset;
+    toggleEditModal(true);
+
+    document.getElementById('edit-idProduit').value    = d.id;
+    document.getElementById('edit-designation').value  = d.designation;
+    document.getElementById('edit-qteStock').value     = d.stock;
+    document.getElementById('edit-seuilAlert').value   = d.seuil;
+    document.getElementById('edit-description').value  = d.description || '';
+    document.getElementById('edit-unite').value        = d.uniteId;
+
+    // Set category then populate subcategory
+    const catSel = document.getElementById('edit-category');
+    catSel.value = d.catId;
+
+    const subSel = document.getElementById('edit-subcategory');
+    if (d.catId) {
+        fetch(`/produit/api/subcategories/${d.catId}`)
+            .then(r => r.json())
+            .then(subs => {
+                subSel.innerHTML = '<option value="">— Select —</option>';
+                subs.forEach(sub => {
+                    const opt = document.createElement('option');
+                    opt.value = sub.id;
+                    opt.textContent = sub.name;
+                    if (sub.id == d.subId) opt.selected = true;
+                    subSel.appendChild(opt);
+                });
+                subSel.disabled = false;
+            });
+    }
+}
+
+// Optional alert functions
+function showEditAlert(message, type) {
+    const el = document.getElementById('edit-modal-alert');
+    el.textContent = message;
+    el.className = type === 'success'
+        ? 'mx-8 mt-4 px-4 py-3 rounded-lg text-sm font-semibold bg-green-100 text-green-700'
+        : 'mx-8 mt-4 px-4 py-3 rounded-lg text-sm font-semibold bg-red-100 text-red-700';
+}
+function hideEditAlert() {
+    document.getElementById('edit-modal-alert').className = 'hidden';
+}
+// --- Edit Form submission via fetch ---
+document.getElementById('editProductForm').addEventListener('submit', async function (e) {
+    e.preventDefault();
+
+    const btn = document.getElementById('editSubmitBtn');
+    const spinner = document.getElementById('editSubmitSpinner');
+    const id = document.getElementById('edit-idProduit').value;
+
+    if (!id) {
+        showEditAlert("Missing Product ID", "error");
+        return;
+    }
+
+    btn.disabled = true;
+    spinner.classList.remove('hidden');
+
+    try {
+        // We use a relative path to avoid "localhost" vs "127.0.0.1" issues
+        const res = await fetch(`/produit/edit/${id}`, {
+            method: 'POST',
+            headers: { 'X-Requested-With': 'XMLHttpRequest' },
+            body: new FormData(this),
+        });
+
+        if (res.ok) {
+            const json = await res.json();
+            if (json.success) {
+                showEditAlert('✅ Updated! Reloading...', 'success');
+                setTimeout(() => window.location.reload(), 800);
+            } else {
+                showEditAlert(json.error || 'Save failed', 'error');
+            }
+        } else {
+            showEditAlert(`Server Error: ${res.status}`, 'error');
+        }
+    } catch (err) {
+        showEditAlert('Connection failed. Is the server running?', 'error');
+    } finally {
+        btn.disabled = false;
+        spinner.classList.add('hidden');
+    }
+});
+document.getElementById('edit-category').addEventListener('change', function () {
+    const catId = this.value;
+    const subSel = document.getElementById('edit-subcategory');
+    subSel.innerHTML = '<option value="">Loading…</option>';
+    subSel.disabled = true;
+
+    if (!catId) {
+        subSel.innerHTML = '<option value="">— Pick category first —</option>';
+        return;
+    }
+
+    fetch(`/produit/api/subcategories/${catId}`)
+        .then(r => r.json())
+        .then(data => {
+            subSel.innerHTML = '<option value="">— Select —</option>';
+            data.forEach(sub => {
+                const opt = document.createElement('option');
+                opt.value = sub.id;
+                opt.textContent = sub.name;
+                subSel.appendChild(opt);
+            });
+            subSel.disabled = false;
+        });
+});
+async function deleteProduct(id, token) {
+    if (!confirm('Delete this product?')) return;
+
+    const res = await fetch(`/produit/${id}/delete`, {
+        method: 'POST',
+        headers: { 'X-Requested-With': 'XMLHttpRequest' },
+        body: new URLSearchParams({ _token: token }),
+    });
+
+    const json = await res.json();
+    if (json.success) {
+        // Remove the row from the DOM — no reload needed
+        document.querySelector(`tr[data-id="${id}"]`)?.remove();
+    } else {
+        alert('Delete failed.');
+    }
+}
+function exportToPDF() {
+    // Collect only the currently visible rows (respects all active filters)
+    const visibleRows = [...document.querySelectorAll('.product-item')]
+        .filter(row => row.style.display !== 'none');
+
+    if (visibleRows.length === 0) {
+        alert('No products to export with the current filters.');
+        return;
+    }
+
+    // Build a self-contained print HTML page
+    const rows = visibleRows.map(row => {
+        const cells = row.querySelectorAll('td');
+        const name     = cells[0]?.innerText.trim() ?? '—';
+        const category = cells[1]?.innerText.trim() ?? '—';
+        const stock    = cells[2]?.querySelector('span')?.innerText.trim() ?? '—';
+        const unit     = cells[3]?.innerText.trim() ?? '—';
+        const status   = cells[4]?.innerText.trim() ?? '—';
+
+        // Status badge colour
+        let badgeStyle = 'background:#f3f4f6;color:#6b7280';
+        if (status.includes('In Stock'))     badgeStyle = 'background:#dcfce7;color:#15803d';
+        if (status.includes('Low Stock'))    badgeStyle = 'background:#ffedd5;color:#c2410c';
+        if (status.includes('Out of Stock')) badgeStyle = 'background:#f3f4f6;color:#6b7280';
+
+        return `
+        <tr>
+            <td style="padding:10px 14px;font-weight:600;color:#1f2937;">${name}</td>
+            <td style="padding:10px 14px;color:#6b7280;">${category}</td>
+            <td style="padding:10px 14px;font-weight:700;color:#111827;">${stock}</td>
+            <td style="padding:10px 14px;color:#9ca3af;font-size:12px;">${unit}</td>
+            <td style="padding:10px 14px;">
+                <span style="padding:3px 10px;border-radius:9999px;font-size:11px;font-weight:700;${badgeStyle}">
+                    ${status}
+                </span>
+            </td>
+        </tr>`;
+    }).join('');
+
+    const now = new Date().toLocaleDateString('fr-MA', {
+        day: '2-digit', month: 'long', year: 'numeric'
+    });
+
+    const html = `<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Products Inventory — Bouzekri Solutions</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Segoe UI', Arial, sans-serif; background: #fff; padding: 32px; color: #111; }
+  .header { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 24px; border-bottom: 2px solid #2563eb; padding-bottom: 16px; }
+  .brand { font-size: 22px; font-weight: 800; color: #2563eb; }
+  .meta  { font-size: 12px; color: #6b7280; text-align: right; }
+  h1 { font-size: 18px; font-weight: 700; color: #1f2937; margin-bottom: 4px; }
+  p  { font-size: 12px; color: #6b7280; margin-bottom: 24px; }
+  table { width: 100%; border-collapse: collapse; }
+  thead tr { background: #f9fafb; border-bottom: 2px solid #e5e7eb; }
+  thead th { padding: 10px 14px; font-size: 12px; font-weight: 700; color: #6b7280; text-align: left; }
+  tbody tr { border-bottom: 1px solid #f3f4f6; }
+  tbody tr:last-child { border-bottom: none; }
+  .footer { margin-top: 32px; font-size: 11px; color: #9ca3af; text-align: center; border-top: 1px solid #e5e7eb; padding-top: 12px; }
+  @media print { body { padding: 16px; } }
+</style>
+</head>
+<body>
+<div class="header">
+  <div class="brand">Bouzekri Solutions</div>
+  <div class="meta">Generated: ${now}<br>Total: ${visibleRows.length} product(s)</div>
+</div>
+<h1>Products Inventory</h1>
+<p>Exported with current filters applied</p>
+<table>
+  <thead>
+    <tr>
+      <th>Product Name</th>
+      <th>Category</th>
+      <th>Stock</th>
+      <th>Unit</th>
+      <th>Status</th>
+    </tr>
+  </thead>
+  <tbody>${rows}</tbody>
+</table>
+<div class="footer">Bouzekri Solutions — Internal Document — ${now}</div>
+<script>window.onload = () => { window.print(); }<\/script>
+</body>
+</html>`;
+
+    const win = window.open('', '_blank');
+    win.document.write(html);
+    win.document.close();
+}
+// Read URL query parameters and apply filters
+const urlParams = new URLSearchParams(window.location.search);
+const statusParam = urlParams.get('status');
+
+if (statusParam) {
+    const statusFilter = document.getElementById('status-filter');
+    if (statusFilter) {
+        if (statusParam === 'low_stock') {
+            statusFilter.value = 'low_stock';
+        } else if (statusParam === 'out_of_stock') {
+            statusFilter.value = 'out_of_stock';
+        }
+        // Trigger the filter update (calls the existing applyFilters function)
+        statusFilter.dispatchEvent(new Event('change'));
+    }
+}
+</script>
+{% endblock %}
+
+

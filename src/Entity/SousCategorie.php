@@ -26,7 +26,10 @@ class SousCategorie {
     {
         return $this->nomSousCat;
     }
-
+    public function getId(): ?int
+    {
+        return $this->idSousCat;
+    }
     public function setNomSousCat(string $nomSousCat): static
     {
         $this->nomSousCat = $nomSousCat;

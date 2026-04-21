@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Bon de Sortie #{{ commande.numero }}</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', Arial, sans-serif; padding: 40px; color: #111; background: #fff; }
+
+        .header { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid #2563eb; padding-bottom: 20px; margin-bottom: 30px; }
+        .brand { font-size: 22px; font-weight: 800; color: #2563eb; }
+        .doc-title { font-size: 18px; font-weight: 700; color: #1f2937; margin-top: 4px; }
+        .doc-meta { font-size: 12px; color: #6b7280; text-align: right; }
+
+        .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 30px; }
+        .info-box { background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 8px; padding: 16px; }
+        .info-box h3 { font-size: 11px; font-weight: 700; color: #6b7280; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 8px; }
+        .info-box p { font-size: 13px; color: #1f2937; margin-bottom: 4px; }
+        .info-box .label { color: #9ca3af; font-size: 11px; }
+
+        .approval-section { margin-bottom: 30px; }
+        .approval-section h3 { font-size: 13px; font-weight: 700; color: #374151; margin-bottom: 12px; border-bottom: 1px solid #e5e7eb; padding-bottom: 6px; }
+        .approval-row { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid #f3f4f6; font-size: 12px; }
+        .approval-row:last-child { border-bottom: none; }
+        .step-badge { width: 22px; height: 22px; border-radius: 50%; background: #dcfce7; color: #15803d; font-size: 10px; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+
+        table { width: 100%; border-collapse: collapse; margin-bottom: 30px; }
+        thead tr { background: #f9fafb; border-bottom: 2px solid #e5e7eb; }
+        thead th { padding: 10px 14px; font-size: 12px; font-weight: 700; color: #6b7280; text-align: left; }
+        tbody tr { border-bottom: 1px solid #f3f4f6; }
+        tbody tr:last-child { border-bottom: none; }
+        tbody td { padding: 10px 14px; font-size: 13px; color: #1f2937; }
+        .product-name { font-weight: 600; }
+
+        .confirmation-box { background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px; padding: 16px; margin-bottom: 30px; display: flex; justify-content: space-between; align-items: center; }
+        .confirmation-box p { font-size: 13px; color: #166534; }
+        .confirmation-box .date { font-size: 12px; color: #6b7280; }
+
+        .signatures { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; margin-top: 40px; }
+        .signature-box { border-top: 1px solid #d1d5db; padding-top: 10px; text-align: center; }
+        .signature-box p { font-size: 11px; color: #6b7280; margin-bottom: 4px; }
+        .signature-box .name { font-size: 12px; font-weight: 600; color: #1f2937; }
+        .signature-space { height: 50px; }
+
+        .footer { margin-top: 40px; border-top: 1px solid #e5e7eb; padding-top: 12px; font-size: 11px; color: #9ca3af; text-align: center; }
+
+        @media print {
+            body { padding: 20px; }
+            .no-print { display: none !important; }
+        }
+    </style>
+</head>
+<body>
+
+    {# ── Print button (hidden on print) ── #}
+    <div class="no-print" style="margin-bottom:20px; display:flex; gap:12px;">
+        <button onclick="window.print()"
+            style="background:#2563eb;color:#fff;padding:8px 20px;border:none;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;">
+            🖨️ Print / Save as PDF
+        </button>
+        <a href="{{ path('app_cmd_intern_show', {id: commande.idCmdInt}) }}"
+            style="background:#f3f4f6;color:#374151;padding:8px 20px;border:none;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;text-decoration:none;">
+            ← Back
+        </a>
+    </div>
+
+    {# ── Header ── #}
+    <div class="header">
+        <div>
+            <div class="brand">Stockly</div>
+            <div class="doc-title">Bon de Sortie de Stock</div>
+        </div>
+        <div class="doc-meta">
+            <p><strong>Bon #{{ commande.numero }}</strong></p>
+            <p>Date: {{ commande.dateCI ? commande.dateCI|date('d/m/Y') : '—' }}</p>
+            <p>Reçu le: {{ commande.receivedAt ? commande.receivedAt|date('d/m/Y H:i') : '—' }}</p>
+        </div>
+    </div>
+
+    {# ── Info Grid ── #}
+    <div class="info-grid">
+        <div class="info-box">
+            <h3>Demandeur</h3>
+            <p><strong>{{ commande.fonctionnaire ? commande.fonctionnaire.prenom ~ ' ' ~ commande.fonctionnaire.nom : '—' }}</strong></p>
+            <p class="label">Email</p>
+            <p>{{ commande.fonctionnaire ? commande.fonctionnaire.email : '—' }}</p>
+            <p class="label">Département</p>
+            <p>{{ commande.fonctionnaire and commande.fonctionnaire.organigramme ? commande.fonctionnaire.organigramme.departement : '—' }}</p>
+        </div>
+        <div class="info-box">
+            <h3>Réception</h3>
+            <p><strong>{{ commande.receivedBy ? commande.receivedBy.prenom ~ ' ' ~ commande.receivedBy.nom : '—' }}</strong></p>
+            <p class="label">Date de réception</p>
+            <p>{{ commande.receivedAt ? commande.receivedAt|date('d/m/Y à H:i') : '—' }}</p>
+            <p class="label">Statut</p>
+            <p style="color:#15803d;font-weight:700;">✅ Reçu</p>
+        </div>
+    </div>
+
+    {# ── Approval Chain ── #}
+    {% if commande.approvalSteps|length > 0 %}
+    <div class="approval-section">
+        <h3>Chaîne d'approbation</h3>
+        {% for step in commande.approvalSteps %}
+        <div class="approval-row">
+            <div style="display:flex;align-items:center;gap:10px;">
+                <div class="step-badge">{{ step.stepOrder }}</div>
+                <div>
+                    <p style="font-weight:600;">{{ step.approver.prenom }} {{ step.approver.nom }}</p>
+                    <p style="color:#9ca3af;font-size:11px;">{{ step.approver.organigramme ? step.approver.organigramme.departement : '' }}</p>
+                </div>
+            </div>
+            <div style="text-align:right;">
+                <span style="background:#dcfce7;color:#15803d;padding:2px 10px;border-radius:999px;font-size:11px;font-weight:700;">Approved</span>
+                {% if step.approvedAt %}
+                <p style="font-size:11px;color:#9ca3af;margin-top:2px;">{{ step.approvedAt|date('d/m/Y H:i') }}</p>
+                {% endif %}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    {# ── Products Table ── #}
+    <table>
+        <thead>
+            <tr>
+                <th>#</th>
+                <th>Désignation du produit</th>
+                <th>Unité</th>
+                <th>Quantité demandée</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for i, ligne in lignes %}
+            <tr>
+                <td style="color:#9ca3af;">{{ i + 1 }}</td>
+                <td class="product-name">{{ ligne.produit.designation }}</td>
+                <td>{{ ligne.produit.unite ? ligne.produit.unite.nomunite : '—' }}</td>
+                <td><strong>{{ ligne.quantite }}</strong></td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    {# ── Confirmation Box ── #}
+    <div class="confirmation-box">
+        <div>
+            <p><strong>✅ Réception confirmée</strong></p>
+            <p>par {{ commande.receivedBy ? commande.receivedBy.prenom ~ ' ' ~ commande.receivedBy.nom : '—' }}</p>
+        </div>
+        <div class="date">{{ commande.receivedAt ? commande.receivedAt|date('d/m/Y à H:i') : '' }}</div>
+    </div>
+
+    {# ── Signatures ── #}
+    <div class="signatures">
+        <div class="signature-box">
+            <p>Demandeur</p>
+            <div class="signature-space"></div>
+            <p class="name">{{ commande.fonctionnaire ? commande.fonctionnaire.prenom ~ ' ' ~ commande.fonctionnaire.nom : '—' }}</p>
+        </div>
+        <div class="signature-box">
+            <p>Responsable Magasin</p>
+            <div class="signature-space"></div>
+            <p class="name">_____________________</p>
+        </div>
+        <div class="signature-box">
+            <p>Approbateur Final</p>
+            <div class="signature-space"></div>
+            {% set finalStep = null %}
+            {% for step in commande.approvalSteps %}
+                {% if loop.last %}{% set finalStep = step %}{% endif %}
+            {% endfor %}
+            <p class="name">{{ finalStep ? finalStep.approver.prenom ~ ' ' ~ finalStep.approver.nom : '—' }}</p>
+        </div>
+    </div>
+
+    {# ── Footer ── #}
+    <div class="footer">
+        Stockly — Document interne — Généré le {{ "now"|date('d/m/Y à H:i') }}
+    </div>
+
+</body>
+</html>

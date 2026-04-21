@@ -1,37 +1,151 @@
 {% extends 'base.html.twig' %}
-
-{% block title %}CmdExtern index{% endblock %}
+{% block title %}External Orders - Bouzekri Solutions{% endblock %}
 
 {% block body %}
-    <h1>CmdExtern index</h1>
+<div class="flex h-screen bg-gray-100">
+<main class="flex-1 overflow-hidden">
+<div class="sticky top-0 z-30 bg-gray-100 px-8 pt-8 pb-4">
 
-    <table class="table">
-        <thead>
-            <tr>
-                <th>IdCmdExt</th>
-                <th>DateCE</th>
-                <th>Statut</th>
-                <th>actions</th>
+    
+
+    <div class="flex justify-between items-end mb-6">
+        <div>
+            <h1 class="text-2xl font-bold text-gray-800">External Orders</h1>
+            <p class="text-gray-500 mt-1">Manage supplier purchase orders</p>
+        </div>
+        {% if is_granted('ROLE_WAREHOUSE') %}
+            <a href="{{ path('app_cmd_extern_new') }}"
+            class="bg-blue-600 text-white px-6 py-2.5 rounded-lg font-bold shadow hover:bg-blue-700 transition-colors flex items-center gap-2">
+                <span>+</span> New External Order
+            </a>
+        {% endif %}
+    </div>
+
+    {% for msg in app.flashes('success') %}
+        <div class="mb-4 px-4 py-3 bg-green-100 text-green-700 rounded-lg font-semibold text-sm">✅ {{ msg }}</div>
+    {% endfor %}
+    {% for msg in app.flashes('error') %}
+        <div class="mb-4 px-4 py-3 bg-red-100 text-red-700 rounded-lg font-semibold text-sm">❌ {{ msg }}</div>
+    {% endfor %}
+
+    <div class="bg-white border rounded-xl p-4 flex gap-4 items-center shadow-sm mb-4">
+        <select id="status-filter" class="border rounded-lg py-2 px-4 text-gray-600 bg-gray-50 focus:outline-none cursor-pointer">
+            <option value="all">Status: All</option>
+            <option value="Draft">Draft</option>
+            <option value="Ordered">Ordered</option>
+            <option value="Shipped">Shipped</option>
+            <option value="Partially Received">Partially Received</option>
+            <option value="Received">Received</option>
+            <option value="Cancelled">Cancelled</option>
+        </select>
+        <input type="text" id="search-input" placeholder="Search by supplier…"
+               class="border py-2 px-4 rounded-lg bg-gray-50 focus:outline-none focus:ring-1 focus:ring-blue-500 flex-1">
+    </div>
+</div>
+
+<div class="bg-white border rounded-xl shadow-sm overflow-auto max-h-[65vh] mx-8">
+    <table class="w-full text-left border-collapse">
+        <thead class="sticky top-0 z-20">
+            <tr class="bg-gray-50 border-b">
+                <th class="py-4 px-6 font-semibold text-gray-600">#</th>
+                <th class="py-4 px-6 font-semibold text-gray-600">Date</th>
+                <th class="py-4 px-6 font-semibold text-gray-600">Supplier</th>
+                <th class="py-4 px-6 font-semibold text-gray-600">Products</th>
+                <th class="py-4 px-6 font-semibold text-gray-600">Status</th>
+                <th class="py-4 px-6 font-semibold text-gray-600 text-center">Actions</th>
             </tr>
         </thead>
-        <tbody>
-        {% for cmd_extern in cmd_externs %}
-            <tr>
-                <td>{{ cmd_extern.idCmdExt }}</td>
-                <td>{{ cmd_extern.dateCE ? cmd_extern.dateCE|date('Y-m-d') : '' }}</td>
-                <td>{{ cmd_extern.statut }}</td>
-                <td>
-                    <a href="{{ path('app_cmd_extern_show', {'idCmdExt': cmd_extern.idCmdExt}) }}">show</a>
-                    <a href="{{ path('app_cmd_extern_edit', {'idCmdExt': cmd_extern.idCmdExt}) }}">edit</a>
-                </td>
-            </tr>
-        {% else %}
-            <tr>
-                <td colspan="4">no records found</td>
-            </tr>
-        {% endfor %}
+        <tbody class="divide-y divide-gray-100">
+            {% for cmd in commandes %}
+                {% set badge = {
+                    'Draft':              'bg-gray-100 text-gray-600',
+                    'Ordered':            'bg-blue-100 text-blue-700',
+                    'Shipped':            'bg-purple-100 text-purple-700',
+                    'Partially Received': 'bg-yellow-100 text-yellow-700',
+                    'Received':           'bg-green-100 text-green-700',
+                    'Cancelled':          'bg-red-100 text-red-700',
+                } %}
+                <tr class="order-row hover:bg-gray-50 transition-colors"
+                    data-status="{{ cmd.statut }}"
+                    data-supplier="{{ cmd.fournisseur ? cmd.fournisseur.denominateur|lower : '' }}">
+                    <td class="py-4 px-6 font-mono text-gray-500 text-sm">#{{ cmd.numero }}</td>
+                    <td class="py-4 px-6 text-gray-700">{{ cmd.dateCE ? cmd.dateCE|date('d/m/Y') : '-' }}</td>
+                    <td class="py-4 px-6 font-semibold text-gray-800">
+                        {% if cmd.fournisseur %}
+                            {{ cmd.fournisseur.denominateur }}
+                        {% else %}
+                            <span class="text-gray-400">—</span>
+                        {% endif %}
+                    </td>
+                    <td class="py-4 px-6 text-sm text-gray-600">
+                        {% set lignes = cmd.lignesCmdExterns %}
+                        {% if lignes|length > 0 %}
+                            {% for ligne in lignes|slice(0,2) %}
+                                <span class="inline-block bg-orange-50 text-orange-700 px-2 py-0.5 rounded text-xs mb-1">
+                                    {{ ligne.produit.designation }} × {{ ligne.quantite }}
+                                </span>
+                            {% endfor %}
+                            {% if lignes|length > 2 %}
+                                <span class="inline-block bg-gray-100 text-gray-600 px-2 py-0.5 rounded text-xs font-semibold">
+                                    +{{ lignes|length - 2 }} more
+                                </span>
+                            {% endif %}
+                        {% else %}
+                            <span class="text-gray-400 text-xs">—</span>
+                        {% endif %}
+                    </td>
+                    <td class="py-4 px-6">
+                        <span class="px-3 py-1 rounded-full text-xs font-bold {{ badge[cmd.statut] ?? 'bg-gray-100 text-gray-600' }}">
+                            {{ cmd.statut }}
+                        </span>
+                    </td>
+                    <td class="py-4 px-6 text-center relative group cursor-pointer">
+                        <span class="text-gray-400 hover:text-gray-800 text-xl">•••</span>
+                        <div class="absolute right-8 top-8 w-36 bg-white border rounded-lg shadow-xl hidden group-hover:block z-10 text-left overflow-hidden">
+                            <a href="{{ path('app_cmd_extern_show', {id: cmd.id}) }}"
+                               class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">
+                                👁️ View Details
+                            </a>
+                            <form method="post" action="{{ path('app_cmd_extern_delete', {id: cmd.id}) }}"
+                                  onsubmit="return confirm('Delete this order?');">
+                                <input type="hidden" name="_token" value="{{ csrf_token('delete' ~ cmd.id) }}">
+                                <button type="submit"
+                                        class="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 font-semibold">
+                                    🗑️ Delete
+                                </button>
+                            </form>
+                        </div>
+                    </td>
+                </tr>
+            {% else %}
+                <tr>
+                    <td colspan="6" class="py-12 text-center text-gray-400">
+                        No external orders yet.
+                        <a href="{{ path('app_cmd_extern_new') }}" class="text-blue-600 hover:underline ml-1">Create one?</a>
+                    </td>
+                </tr>
+            {% endfor %}
         </tbody>
     </table>
+</div>
+</main>
+</div>
+{% endblock %}
 
-    <a href="{{ path('app_cmd_extern_new') }}">Create new</a>
+{% block javascripts %}
+<script>
+const statusFilter = document.getElementById('status-filter');
+const searchInput  = document.getElementById('search-input');
+function applyFilters() {
+    const status = statusFilter.value;
+    const search = searchInput.value.toLowerCase();
+    document.querySelectorAll('.order-row').forEach(row => {
+        const matchStatus   = status === 'all' || row.dataset.status === status;
+        const matchSupplier = row.dataset.supplier.includes(search);
+        row.style.display   = (matchStatus && matchSupplier) ? '' : 'none';
+    });
+}
+statusFilter.addEventListener('change', applyFilters);
+searchInput.addEventListener('input', applyFilters);
+</script>
 {% endblock %}

@@ -10,6 +10,8 @@ class LigneLivExtern {
     #[ORM\Id, ORM\GeneratedValue, ORM\Column]
     private ?int $numL_LE = null;
 
+
+    
     #[ORM\Column]
     private ?int $qteLivree = null;
 
