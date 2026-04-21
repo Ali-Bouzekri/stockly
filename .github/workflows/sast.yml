@@ -1,10 +1,10 @@
 name: SAST (Static Analysis)
 
-# Run on every push and pull request
-on: [push, pull_request]
-workflow_dispatch:  # <-- add this
+on:
+  workflow_dispatch:
   push:
   pull_request:
+
 jobs:
   security:
     runs-on: ubuntu-latest
@@ -45,9 +45,9 @@ jobs:
       - name: Composer Audit
         run: composer audit
 
-      # 8. Run PHPStan (level 5)
+      # 8. Run PHPStan (uses level from phpstan.neon)
       - name: PHPStan Analysis
-        run: vendor/bin/phpstan analyse src --level=5 --no-progress
+        run: vendor/bin/phpstan analyse src --no-progress
 
       # 9. Run Psalm (with default config)
       - name: Psalm Analysis
