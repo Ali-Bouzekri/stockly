@@ -1,0 +1,26 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}LigneCmdExtern{% endblock %}
+
+{% block body %}
+    <h1>LigneCmdExtern</h1>
+
+    <table class="table">
+        <tbody>
+            <tr>
+                <th>NumL_CE</th>
+                <td>{{ ligne_cmd_extern.numLCE }}</td>
+            </tr>
+            <tr>
+                <th>Quantite</th>
+                <td>{{ ligne_cmd_extern.quantite }}</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <a href="{{ path('app_ligne_cmd_extern_index') }}">back to list</a>
+
+    <a href="{{ path('app_ligne_cmd_extern_edit', {'numL_CE': ligne_cmd_extern.numL_CE}) }}">edit</a>
+
+    {{ include('ligne_cmd_extern/_delete_form.html.twig') }}
+{% endblock %}

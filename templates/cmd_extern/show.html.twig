@@ -1,0 +1,30 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}CmdExtern{% endblock %}
+
+{% block body %}
+    <h1>CmdExtern</h1>
+
+    <table class="table">
+        <tbody>
+            <tr>
+                <th>IdCmdExt</th>
+                <td>{{ cmd_extern.idCmdExt }}</td>
+            </tr>
+            <tr>
+                <th>DateCE</th>
+                <td>{{ cmd_extern.dateCE ? cmd_extern.dateCE|date('Y-m-d') : '' }}</td>
+            </tr>
+            <tr>
+                <th>Statut</th>
+                <td>{{ cmd_extern.statut }}</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <a href="{{ path('app_cmd_extern_index') }}">back to list</a>
+
+    <a href="{{ path('app_cmd_extern_edit', {'idCmdExt': cmd_extern.idCmdExt}) }}">edit</a>
+
+    {{ include('cmd_extern/_delete_form.html.twig') }}
+{% endblock %}

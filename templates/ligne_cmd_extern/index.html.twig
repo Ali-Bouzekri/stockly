@@ -1,0 +1,35 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}LigneCmdExtern index{% endblock %}
+
+{% block body %}
+    <h1>LigneCmdExtern index</h1>
+
+    <table class="table">
+        <thead>
+            <tr>
+                <th>NumL_CE</th>
+                <th>Quantite</th>
+                <th>actions</th>
+            </tr>
+        </thead>
+        <tbody>
+        {% for ligne_cmd_extern in ligne_cmd_externs %}
+            <tr>
+                <td>{{ ligne_cmd_extern.numLCE }}</td>
+                <td>{{ ligne_cmd_extern.quantite }}</td>
+                <td>
+                    <a href="{{ path('app_ligne_cmd_extern_show', {'numL_CE': ligne_cmd_extern.numL_CE}) }}">show</a>
+                    <a href="{{ path('app_ligne_cmd_extern_edit', {'numL_CE': ligne_cmd_extern.numL_CE}) }}">edit</a>
+                </td>
+            </tr>
+        {% else %}
+            <tr>
+                <td colspan="3">no records found</td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+
+    <a href="{{ path('app_ligne_cmd_extern_new') }}">Create new</a>
+{% endblock %}

@@ -1,0 +1,41 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Fonctionnaire index{% endblock %}
+
+{% block body %}
+    <h1>Fonctionnaire index</h1>
+
+    <table class="table">
+        <thead>
+            <tr>
+                <th>IdFonct</th>
+                <th>Nom</th>
+                <th>Prenom</th>
+                <th>Email</th>
+                <th>Responsable</th>
+                <th>actions</th>
+            </tr>
+        </thead>
+        <tbody>
+        {% for fonctionnaire in fonctionnaires %}
+            <tr>
+                <td>{{ fonctionnaire.idFonct }}</td>
+                <td>{{ fonctionnaire.nom }}</td>
+                <td>{{ fonctionnaire.prenom }}</td>
+                <td>{{ fonctionnaire.email }}</td>
+                <td>{{ fonctionnaire.responsable ? 'Yes' : 'No' }}</td>
+                <td>
+                    <a href="{{ path('app_fonctionnaire_show', {'idFonct': fonctionnaire.idFonct}) }}">show</a>
+                    <a href="{{ path('app_fonctionnaire_edit', {'idFonct': fonctionnaire.idFonct}) }}">edit</a>
+                </td>
+            </tr>
+        {% else %}
+            <tr>
+                <td colspan="6">no records found</td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+
+    <a href="{{ path('app_fonctionnaire_new') }}">Create new</a>
+{% endblock %}

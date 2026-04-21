@@ -1,0 +1,52 @@
+name: SAST (Static Analysis)
+
+# Run on every push and pull request
+on: [push, pull_request]
+
+jobs:
+  security:
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1. Check out your code
+      - uses: actions/checkout@v4
+
+      # 2. Setup PHP with required extensions
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          extensions: pdo, pdo_mysql, intl, zip
+          tools: composer:v2
+
+      # 3. Validate composer.json
+      - name: Validate composer.json
+        run: composer validate --strict
+
+      # 4. Cache Composer dependencies for faster runs
+      - name: Cache Composer packages
+        uses: actions/cache@v4
+        with:
+          path: vendor
+          key: ${{ runner.os }}-php-${{ hashFiles('**/composer.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-php-
+
+      # 5. Install project dependencies (including dev)
+      - name: Install dependencies
+        run: composer install --prefer-dist --no-progress --no-interaction
+
+      # 6. Install SAST tools on the fly (if not already in composer.json)
+      - name: Install SAST tools
+        run: composer require --dev phpstan/phpstan vimeo/psalm --no-interaction --no-progress
+
+      # 7. Run Composer Audit (checks known vulnerabilities in dependencies)
+      - name: Composer Audit
+        run: composer audit
+
+      # 8. Run PHPStan (level 5)
+      - name: PHPStan Analysis
+        run: vendor/bin/phpstan analyse src --level=5 --no-progress
+
+      # 9. Run Psalm (with default config)
+      - name: Psalm Analysis
+        run: vendor/bin/psalm --no-progress --output-format=github

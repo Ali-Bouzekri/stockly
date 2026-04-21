@@ -1,0 +1,36 @@
+<?php
+
+namespace App\Form;
+
+use App\Entity\CmdIntern;
+use App\Entity\LigneCmdIntern;
+use App\Entity\Produit;
+use Symfony\Bridge\Doctrine\Form\Type\EntityType;
+use Symfony\Component\Form\AbstractType;
+use Symfony\Component\Form\FormBuilderInterface;
+use Symfony\Component\OptionsResolver\OptionsResolver;
+
+class LigneCmdInternType extends AbstractType
+{
+    public function buildForm(FormBuilderInterface $builder, array $options): void
+    {
+        $builder
+            ->add('quantite')
+            ->add('cmdInt', EntityType::class, [
+                'class' => CmdIntern::class,
+                'choice_label' => 'id',
+            ])
+            ->add('produit', EntityType::class, [
+                'class' => Produit::class,
+                'choice_label' => 'id',
+            ])
+        ;
+    }
+
+    public function configureOptions(OptionsResolver $resolver): void
+    {
+        $resolver->setDefaults([
+            'data_class' => LigneCmdIntern::class,
+        ]);
+    }
+}

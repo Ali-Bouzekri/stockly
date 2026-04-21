@@ -1,0 +1,35 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}LigneLivIntern index{% endblock %}
+
+{% block body %}
+    <h1>LigneLivIntern index</h1>
+
+    <table class="table">
+        <thead>
+            <tr>
+                <th>NumL_LI</th>
+                <th>QteLivree</th>
+                <th>actions</th>
+            </tr>
+        </thead>
+        <tbody>
+        {% for ligne_liv_intern in ligne_liv_interns %}
+            <tr>
+                <td>{{ ligne_liv_intern.numLLI }}</td>
+                <td>{{ ligne_liv_intern.qteLivree }}</td>
+                <td>
+                    <a href="{{ path('app_ligne_liv_intern_show', {'numL_LI': ligne_liv_intern.numL_LI}) }}">show</a>
+                    <a href="{{ path('app_ligne_liv_intern_edit', {'numL_LI': ligne_liv_intern.numL_LI}) }}">edit</a>
+                </td>
+            </tr>
+        {% else %}
+            <tr>
+                <td colspan="3">no records found</td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+
+    <a href="{{ path('app_ligne_liv_intern_new') }}">Create new</a>
+{% endblock %}

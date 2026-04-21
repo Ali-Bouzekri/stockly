@@ -1,0 +1,35 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}LigneCmdIntern index{% endblock %}
+
+{% block body %}
+    <h1>LigneCmdIntern index</h1>
+
+    <table class="table">
+        <thead>
+            <tr>
+                <th>NumL_CI</th>
+                <th>Quantite</th>
+                <th>actions</th>
+            </tr>
+        </thead>
+        <tbody>
+        {% for ligne_cmd_intern in ligne_cmd_interns %}
+            <tr>
+                <td>{{ ligne_cmd_intern.numLCI }}</td>
+                <td>{{ ligne_cmd_intern.quantite }}</td>
+                <td>
+                    <a href="{{ path('app_ligne_cmd_intern_show', {'numL_CI': ligne_cmd_intern.numL_CI}) }}">show</a>
+                    <a href="{{ path('app_ligne_cmd_intern_edit', {'numL_CI': ligne_cmd_intern.numL_CI}) }}">edit</a>
+                </td>
+            </tr>
+        {% else %}
+            <tr>
+                <td colspan="3">no records found</td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+
+    <a href="{{ path('app_ligne_cmd_intern_new') }}">Create new</a>
+{% endblock %}

@@ -1,0 +1,13 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Edit LivExtern{% endblock %}
+
+{% block body %}
+    <h1>Edit LivExtern</h1>
+
+    {{ include('liv_extern/_form.html.twig', {'button_label': 'Update'}) }}
+
+    <a href="{{ path('app_liv_extern_index') }}">back to list</a>
+
+    {{ include('liv_extern/_delete_form.html.twig') }}
+{% endblock %}

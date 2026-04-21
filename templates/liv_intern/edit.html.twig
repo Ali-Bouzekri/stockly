@@ -1,0 +1,13 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Edit LivIntern{% endblock %}
+
+{% block body %}
+    <h1>Edit LivIntern</h1>
+
+    {{ include('liv_intern/_form.html.twig', {'button_label': 'Update'}) }}
+
+    <a href="{{ path('app_liv_intern_index') }}">back to list</a>
+
+    {{ include('liv_intern/_delete_form.html.twig') }}
+{% endblock %}

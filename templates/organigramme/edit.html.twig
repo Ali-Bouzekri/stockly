@@ -1,0 +1,13 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Edit Organigramme{% endblock %}
+
+{% block body %}
+    <h1>Edit Organigramme</h1>
+
+    {{ include('organigramme/_form.html.twig', {'button_label': 'Update'}) }}
+
+    <a href="{{ path('app_organigramme_index') }}">back to list</a>
+
+    {{ include('organigramme/_delete_form.html.twig') }}
+{% endblock %}

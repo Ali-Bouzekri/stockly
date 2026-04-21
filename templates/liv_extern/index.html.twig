@@ -1,0 +1,35 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}LivExtern index{% endblock %}
+
+{% block body %}
+    <h1>LivExtern index</h1>
+
+    <table class="table">
+        <thead>
+            <tr>
+                <th>IdLivExt</th>
+                <th>DateLE</th>
+                <th>actions</th>
+            </tr>
+        </thead>
+        <tbody>
+        {% for liv_extern in liv_externs %}
+            <tr>
+                <td>{{ liv_extern.idLivExt }}</td>
+                <td>{{ liv_extern.dateLE ? liv_extern.dateLE|date('Y-m-d') : '' }}</td>
+                <td>
+                    <a href="{{ path('app_liv_extern_show', {'idLivExt': liv_extern.idLivExt}) }}">show</a>
+                    <a href="{{ path('app_liv_extern_edit', {'idLivExt': liv_extern.idLivExt}) }}">edit</a>
+                </td>
+            </tr>
+        {% else %}
+            <tr>
+                <td colspan="3">no records found</td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+
+    <a href="{{ path('app_liv_extern_new') }}">Create new</a>
+{% endblock %}

@@ -1,0 +1,22 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Comite{% endblock %}
+
+{% block body %}
+    <h1>Comite</h1>
+
+    <table class="table">
+        <tbody>
+            <tr>
+                <th>IdComit</th>
+                <td>{{ comite.idComit }}</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <a href="{{ path('app_comite_index') }}">back to list</a>
+
+    <a href="{{ path('app_comite_edit', {'idComit': comite.idComit}) }}">edit</a>
+
+    {{ include('comite/_delete_form.html.twig') }}
+{% endblock %}

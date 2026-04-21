@@ -1,0 +1,11 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}New LivExtern{% endblock %}
+
+{% block body %}
+    <h1>Create new LivExtern</h1>
+
+    {{ include('liv_extern/_form.html.twig') }}
+
+    <a href="{{ path('app_liv_extern_index') }}">back to list</a>
+{% endblock %}

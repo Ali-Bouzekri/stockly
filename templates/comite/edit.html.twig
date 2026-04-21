@@ -1,0 +1,13 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Edit Comite{% endblock %}
+
+{% block body %}
+    <h1>Edit Comite</h1>
+
+    {{ include('comite/_form.html.twig', {'button_label': 'Update'}) }}
+
+    <a href="{{ path('app_comite_index') }}">back to list</a>
+
+    {{ include('comite/_delete_form.html.twig') }}
+{% endblock %}

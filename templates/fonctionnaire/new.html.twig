@@ -1,0 +1,11 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}New Fonctionnaire{% endblock %}
+
+{% block body %}
+    <h1>Create new Fonctionnaire</h1>
+
+    {{ include('fonctionnaire/_form.html.twig') }}
+
+    <a href="{{ path('app_fonctionnaire_index') }}">back to list</a>
+{% endblock %}

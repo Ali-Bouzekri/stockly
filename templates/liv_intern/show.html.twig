@@ -1,0 +1,26 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}LivIntern{% endblock %}
+
+{% block body %}
+    <h1>LivIntern</h1>
+
+    <table class="table">
+        <tbody>
+            <tr>
+                <th>IdLivInt</th>
+                <td>{{ liv_intern.idLivInt }}</td>
+            </tr>
+            <tr>
+                <th>DateLI</th>
+                <td>{{ liv_intern.dateLI ? liv_intern.dateLI|date('Y-m-d') : '' }}</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <a href="{{ path('app_liv_intern_index') }}">back to list</a>
+
+    <a href="{{ path('app_liv_intern_edit', {'idLivInt': liv_intern.idLivInt}) }}">edit</a>
+
+    {{ include('liv_intern/_delete_form.html.twig') }}
+{% endblock %}

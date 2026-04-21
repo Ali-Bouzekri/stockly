@@ -1,0 +1,35 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}LivIntern index{% endblock %}
+
+{% block body %}
+    <h1>LivIntern index</h1>
+
+    <table class="table">
+        <thead>
+            <tr>
+                <th>IdLivInt</th>
+                <th>DateLI</th>
+                <th>actions</th>
+            </tr>
+        </thead>
+        <tbody>
+        {% for liv_intern in liv_interns %}
+            <tr>
+                <td>{{ liv_intern.idLivInt }}</td>
+                <td>{{ liv_intern.dateLI ? liv_intern.dateLI|date('Y-m-d') : '' }}</td>
+                <td>
+                    <a href="{{ path('app_liv_intern_show', {'idLivInt': liv_intern.idLivInt}) }}">show</a>
+                    <a href="{{ path('app_liv_intern_edit', {'idLivInt': liv_intern.idLivInt}) }}">edit</a>
+                </td>
+            </tr>
+        {% else %}
+            <tr>
+                <td colspan="3">no records found</td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+
+    <a href="{{ path('app_liv_intern_new') }}">Create new</a>
+{% endblock %}

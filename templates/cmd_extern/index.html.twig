@@ -1,0 +1,37 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}CmdExtern index{% endblock %}
+
+{% block body %}
+    <h1>CmdExtern index</h1>
+
+    <table class="table">
+        <thead>
+            <tr>
+                <th>IdCmdExt</th>
+                <th>DateCE</th>
+                <th>Statut</th>
+                <th>actions</th>
+            </tr>
+        </thead>
+        <tbody>
+        {% for cmd_extern in cmd_externs %}
+            <tr>
+                <td>{{ cmd_extern.idCmdExt }}</td>
+                <td>{{ cmd_extern.dateCE ? cmd_extern.dateCE|date('Y-m-d') : '' }}</td>
+                <td>{{ cmd_extern.statut }}</td>
+                <td>
+                    <a href="{{ path('app_cmd_extern_show', {'idCmdExt': cmd_extern.idCmdExt}) }}">show</a>
+                    <a href="{{ path('app_cmd_extern_edit', {'idCmdExt': cmd_extern.idCmdExt}) }}">edit</a>
+                </td>
+            </tr>
+        {% else %}
+            <tr>
+                <td colspan="4">no records found</td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+
+    <a href="{{ path('app_cmd_extern_new') }}">Create new</a>
+{% endblock %}

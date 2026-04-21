@@ -1,0 +1,26 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}LigneCmdIntern{% endblock %}
+
+{% block body %}
+    <h1>LigneCmdIntern</h1>
+
+    <table class="table">
+        <tbody>
+            <tr>
+                <th>NumL_CI</th>
+                <td>{{ ligne_cmd_intern.numLCI }}</td>
+            </tr>
+            <tr>
+                <th>Quantite</th>
+                <td>{{ ligne_cmd_intern.quantite }}</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <a href="{{ path('app_ligne_cmd_intern_index') }}">back to list</a>
+
+    <a href="{{ path('app_ligne_cmd_intern_edit', {'numL_CI': ligne_cmd_intern.numL_CI}) }}">edit</a>
+
+    {{ include('ligne_cmd_intern/_delete_form.html.twig') }}
+{% endblock %}
