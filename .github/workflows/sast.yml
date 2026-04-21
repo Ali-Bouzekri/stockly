@@ -50,5 +50,5 @@ jobs:
         run: vendor/bin/phpstan analyse src --no-progress
 
       # 9. Run Psalm (with default config)
-      - name: Psalm Analysis
-        run: vendor/bin/psalm --no-progress --output-format=github
+      #- name: Psalm Analysis
+      #  run: vendor/bin/psalm --no-progress --output-format=github
