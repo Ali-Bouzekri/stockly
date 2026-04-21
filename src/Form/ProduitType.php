@@ -3,8 +3,8 @@
 namespace App\Form;
 
 use App\Entity\Produit;
-use App\Entity\souscategorie;
-use App\Entity\unit;
+use App\Entity\SousCategorie;
+use App\Entity\Unit;
 use Symfony\Bridge\Doctrine\Form\Type\EntityType;
 use Symfony\Component\Form\AbstractType;
 use Symfony\Component\Form\FormBuilderInterface;
@@ -20,11 +20,11 @@ class ProduitType extends AbstractType
             ->add('qteStock')
             ->add('seuilAlert')
             ->add('unite', EntityType::class, [
-                'class' => unit::class,
+                'class' => Unit::class,
                 'choice_label' => 'id',
             ])
             ->add('sousCategorie', EntityType::class, [
-                'class' => souscategorie::class,
+                'class' => SousCategorie::class,
                 'choice_label' => 'id',
             ])
         ;
