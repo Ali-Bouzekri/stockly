@@ -2,7 +2,9 @@ name: SAST (Static Analysis)
 
 # Run on every push and pull request
 on: [push, pull_request]
-
+workflow_dispatch:  # <-- add this
+  push:
+  pull_request:
 jobs:
   security:
     runs-on: ubuntu-latest
