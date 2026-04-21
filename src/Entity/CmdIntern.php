@@ -12,16 +12,14 @@ use App\Entity\ApprovalStep;
 #[ORM\Entity(repositoryClass: CmdInternRepository::class)]
 class CmdIntern
 {
-    #[ORM\Id]
-    #[ORM\GeneratedValue]
-    #[ORM\Column]
-    private ?int $idCmdInt = null;
+    #[ORM\Id, ORM\GeneratedValue, ORM\Column]
+private int $idCmdInt ;
 
     #[ORM\Column(type: 'date')]
     private ?\DateTimeInterface $dateCI = null;
 
     #[ORM\Column(type: 'string', columnDefinition: "ENUM('Pending','Approved','In Preparation','Ready','Delivered','Rejected')")]
-    private ?string $statut = 'Pending';
+private string $statut = 'Pending';
 
     #[ORM\ManyToOne]
     #[ORM\JoinColumn(name: 'idFonct', referencedColumnName: 'id_fonct')]

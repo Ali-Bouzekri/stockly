@@ -71,7 +71,7 @@ final class LigneLivExternController extends AbstractController
     #[Route('/{numL_LE}', name: 'app_ligne_liv_extern_delete', methods: ['POST'])]
     public function delete(Request $request, LigneLivExtern $ligneLivExtern, EntityManagerInterface $entityManager): Response
     {
-        if ($this->isCsrfTokenValid('delete'.$ligneLivExtern->getNumL_LE(), $request->getPayload()->getString('_token'))) {
+        if ($this->isCsrfTokenValid('delete'.$ligneLivExtern->getNumLLE(), $request->getPayload()->getString('_token'))) {
             $entityManager->remove($ligneLivExtern);
             $entityManager->flush();
         }
